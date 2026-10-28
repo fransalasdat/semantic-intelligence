@@ -1,0 +1,61 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 347.07201451536611,
+            "y": 331.8293247729892
+          },
+          "nodeIndex": "DimFecha",
+          "nodeLineageTag": "7e44f9d1-6855-443d-afc5-f4efdd320799",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 334,
+            "y": -14
+          },
+          "nodeIndex": "DimProducto",
+          "nodeLineageTag": "87f8eab7-71f6-498b-911a-dee67de2e365",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 25,
+            "y": 150
+          },
+          "nodeIndex": "FactVentas",
+          "nodeLineageTag": "4af4c6ee-555c-46d7-ab42-c3d646726962",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "Todas las tablas",
+      "zoomValue": 70.95554390096882,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "Todas las tablas",
+  "defaultDiagram": "Todas las tablas"
+}

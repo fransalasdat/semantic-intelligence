@@ -1,0 +1,44 @@
+table DimProducto
+	lineageTag: 87f8eab7-71f6-498b-911a-dee67de2e365
+
+	column IdProducto
+		dataType: int64
+		formatString: 0
+		lineageTag: e5b2d3c8-14b6-4b61-8406-d36fc5dae910
+		summarizeBy: none
+		sourceColumn: IdProducto
+
+		annotation SummarizationSetBy = Automatic
+
+	column Producto
+		dataType: string
+		lineageTag: 3cad88ef-fd5f-491e-a0c9-f586c366ec72
+		summarizeBy: none
+		sourceColumn: Producto
+
+		annotation SummarizationSetBy = Automatic
+
+	column Categoria
+		dataType: string
+		lineageTag: eee5e307-9707-40d0-8dad-daa2b43a4742
+		summarizeBy: none
+		sourceColumn: Categoria
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimProducto = m
+		mode: import
+		source =
+				#table(
+				    type table [IdProducto = Int64.Type, Producto = text, Categoria = text],
+				    {
+				        {1, "Café Molido", "Café"},
+				        {2, "Té Negro", "Infusiones"},
+				        {3, "Yerba Mate", "Infusiones"}
+				    }
+				)
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

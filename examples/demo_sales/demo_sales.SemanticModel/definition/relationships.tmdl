@@ -1,0 +1,13 @@
+relationship 524365f0-c4ee-4b9b-9c49-55ffd32c969a
+	joinOnDateBehavior: datePartOnly
+	fromColumn: DimFecha.Fecha
+	toColumn: LocalDateTable_6f679d0e-689e-4050-b551-1f1cb79cadf2.Date
+
+relationship AutoDetected_993b499f-1962-4d3f-a0e9-03556b9de6c7
+	fromColumn: FactVentas.IdProducto
+	toColumn: DimProducto.IdProducto
+
+relationship 29e4aa9d-3435-a4d9-ddd4-d5e51b79fd3d
+	fromColumn: FactVentas.Fecha
+	toColumn: DimFecha.Fecha
+

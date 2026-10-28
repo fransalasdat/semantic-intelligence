@@ -1,0 +1,58 @@
+table DimFecha
+	lineageTag: 7e44f9d1-6855-443d-afc5-f4efdd320799
+
+	column Fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 055970fc-050c-49d8-8d09-fafbc27ceda7
+		summarizeBy: none
+		sourceColumn: Fecha
+
+		variation Variación
+			isDefault
+			relationship: 524365f0-c4ee-4b9b-9c49-55ffd32c969a
+			defaultHierarchy: LocalDateTable_6f679d0e-689e-4050-b551-1f1cb79cadf2.'Jerarquía de fechas'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Año
+		dataType: int64
+		formatString: 0
+		lineageTag: a1b5ddd5-e201-40fc-aa0d-0728d815e08c
+		summarizeBy: sum
+		sourceColumn: Año
+
+		annotation SummarizationSetBy = Automatic
+
+	column Mes
+		dataType: int64
+		formatString: 0
+		lineageTag: 32791dcf-d7a5-406f-86ee-c2cbf3e9d579
+		summarizeBy: sum
+		sourceColumn: Mes
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimFecha = m
+		mode: import
+		source =
+				#table(
+				    type table [Fecha = date, #"Año" = Int64.Type, Mes = Int64.Type],
+				    {
+				        {#date(2026, 1, 5), 2026, 1},
+				        {#date(2026, 1, 10), 2026, 1},
+				        {#date(2026, 1, 20), 2026, 1},
+				        {#date(2026, 2, 3), 2026, 2},
+				        {#date(2026, 2, 15), 2026, 2},
+				        {#date(2026, 2, 22), 2026, 2},
+				        {#date(2026, 3, 4), 2026, 3},
+				        {#date(2026, 3, 20), 2026, 3}
+				    }
+				)
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

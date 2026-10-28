@@ -41,6 +41,11 @@ La primera versión no modificará modelos Power BI, no procesará archivos PBIX
 semantic-intelligence/
 ├── docs/
 │   └── PROJECT_SCOPE.md
+├── examples/
+│   └── demo_sales/
+│       ├── demo_sales.pbip
+│       ├── demo_sales.Report/
+│       └── demo_sales.SemanticModel/
 ├── src/
 │   └── semantic_intelligence/
 │       └── __init__.py
@@ -66,6 +71,10 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 pytest
 ```
+
+## Modelo de demostración
+
+El proyecto portátil de Power BI disponible en [`examples/demo_sales`](examples/demo_sales) funciona como modelo de referencia para el desarrollo y las pruebas. Sus datos están embebidos en Power Query, por lo que puede abrirse sin rutas locales, credenciales ni fuentes externas.
 
 ## Principios del proyecto
 

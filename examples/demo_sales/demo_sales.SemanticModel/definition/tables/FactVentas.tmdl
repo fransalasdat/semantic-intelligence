@@ -1,0 +1,146 @@
+table FactVentas
+	lineageTag: 4af4c6ee-555c-46d7-ab42-c3d646726962
+
+	measure 'Ventas Brutas' =
+			
+			SUMX(
+			    FactVentas,
+			    FactVentas[Cantidad] *
+			    FactVentas[PrecioUnitario]
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: Ventas
+		lineageTag: 8ba21320-546c-49e1-a096-d427c1804649
+
+		annotation PBI_FormatHint = {"currencyCulture":"es-US"}
+
+	measure 'Costo Total' =
+			
+			SUMX(
+			    FactVentas,
+			    FactVentas[Cantidad] *
+			    FactVentas[CostoUnitario]
+			)
+		formatString: 0
+		displayFolder: Costos
+		lineageTag: e592b634-575e-4ed6-aebb-dcba0b945f41
+
+	measure 'Utilidad Bruta' =
+			
+			[Ventas Brutas] - [Costo Total]
+		formatString: 0
+		displayFolder: Rentabilidad
+		lineageTag: 7082cfaf-d079-49b5-95ff-a5f5fb10dac0
+
+	measure 'Margen %' =
+			
+			DIVIDE(
+			    [Utilidad Bruta],
+			    [Ventas Brutas]
+			)
+		displayFolder: Rentabilidad
+		lineageTag: 57410baa-adcc-4540-814f-567452268e09
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cantidad Operaciones' =
+			
+			DISTINCTCOUNT(
+			    FactVentas[IdVenta]
+			)
+		formatString: 0
+		displayFolder: Indicadores
+		lineageTag: 4aaff251-14d0-4956-b307-28d8410997db
+
+	measure 'Ticket Promedio' =
+			
+			DIVIDE(
+			    [Ventas Brutas],
+			    [Cantidad Operaciones]
+			)
+		displayFolder: Indicadores
+		lineageTag: 538e092c-0ab4-4945-a68f-58abad5cc130
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IdVenta
+		dataType: int64
+		formatString: 0
+		lineageTag: fab7d4bb-30b2-4c8f-999a-c530b4bf58b8
+		summarizeBy: sum
+		sourceColumn: IdVenta
+
+		annotation SummarizationSetBy = Automatic
+
+	column IdProducto
+		dataType: int64
+		formatString: 0
+		lineageTag: 1e995a21-924e-4920-81f0-81e7ae70cc6e
+		summarizeBy: none
+		sourceColumn: IdProducto
+
+		annotation SummarizationSetBy = Automatic
+
+	column Fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: c8c15261-8a9b-4342-b72c-639e573e8be5
+		summarizeBy: none
+		sourceColumn: Fecha
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Cantidad
+		dataType: int64
+		formatString: 0
+		lineageTag: c80acdc1-ba58-4de4-be00-4f0589f692fa
+		summarizeBy: sum
+		sourceColumn: Cantidad
+
+		annotation SummarizationSetBy = Automatic
+
+	column PrecioUnitario
+		dataType: int64
+		formatString: 0
+		lineageTag: 5b44e5dc-88cb-4c4d-b405-daeea57c80d7
+		summarizeBy: sum
+		sourceColumn: PrecioUnitario
+
+		annotation SummarizationSetBy = Automatic
+
+	column CostoUnitario
+		dataType: int64
+		formatString: 0
+		lineageTag: c3eabf1e-00e1-44c0-add4-5de76bf766e7
+		summarizeBy: sum
+		sourceColumn: CostoUnitario
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FactVentas = m
+		mode: import
+		source =
+				#table(
+				    type table [IdVenta = Int64.Type, IdProducto = Int64.Type, Fecha = date, Cantidad = Int64.Type, PrecioUnitario = Int64.Type, CostoUnitario = Int64.Type],
+				    {
+				        {101, 1, #date(2026, 1, 5), 5, 8000, 5000},
+				        {102, 2, #date(2026, 1, 5), 3, 4500, 3000},
+				        {103, 3, #date(2026, 1, 10), 10, 6500, 4200},
+				        {104, 1, #date(2026, 1, 20), 4, 8000, 5000},
+				        {105, 2, #date(2026, 2, 3), 7, 4500, 3000},
+				        {106, 3, #date(2026, 2, 3), 6, 6500, 4200},
+				        {107, 1, #date(2026, 2, 15), 9, 8000, 5000},
+				        {108, 2, #date(2026, 2, 22), 2, 4500, 3000},
+				        {109, 3, #date(2026, 3, 4), 8, 6500, 4200},
+				        {110, 1, #date(2026, 3, 4), 3, 8000, 5000},
+				        {111, 2, #date(2026, 3, 20), 5, 4500, 3000},
+				        {112, 3, #date(2026, 3, 20), 4, 6500, 4200}
+				    }
+				)
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+
