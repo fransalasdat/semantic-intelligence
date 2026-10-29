@@ -86,6 +86,88 @@ def test_parses_fact_ventas_columns_and_measures() -> None:
     ]
 
 
+def test_parses_demo_column_metadata() -> None:
+    tables = _parse_demo_tables()
+    fact_ventas = next(
+        table for table in tables if table.name == "FactVentas"
+    )
+    fecha = next(
+        column for column in fact_ventas.columns if column.name == "Fecha"
+    )
+
+    assert fecha.data_type == "dateTime"
+    assert fecha.source_column == "Fecha"
+    assert fecha.summarize_by == "none"
+    assert fecha.is_hidden is False
+    assert fecha.expression is None
+    assert fecha.source_path.as_posix() == "tables/FactVentas.tmdl"
+
+
+def test_parses_demo_measure_expression_and_metadata() -> None:
+    tables = _parse_demo_tables()
+    fact_ventas = next(
+        table for table in tables if table.name == "FactVentas"
+    )
+    margin = next(
+        measure
+        for measure in fact_ventas.measures
+        if measure.name == "Margen %"
+    )
+
+    assert margin.expression == (
+        "DIVIDE(\n"
+        "    [Utilidad Bruta],\n"
+        "    [Ventas Brutas]\n"
+        ")"
+    )
+    assert margin.display_folder == "Rentabilidad"
+    assert margin.format_string is None
+    assert margin.source_path.as_posix() == "tables/FactVentas.tmdl"
+
+
+def test_parses_descriptions_flags_and_calculated_column() -> None:
+    document = TmdlDocument(
+        path=Path("Sales.tmdl"),
+        relative_path=Path("tables/Sales.tmdl"),
+        kind=TmdlDocumentKind.TABLE,
+        content=(
+            "/// Sales fact table\n"
+            "table Sales\n"
+            "\tisHidden\n"
+            "\tisPrivate: false\n"
+            "\n"
+            "\t/// Gross amount calculated per row\n"
+            "\tcolumn Amount =\n"
+            "\t\t\t[Quantity] * [Unit Price]\n"
+            "\t\tdataType: decimal\n"
+            "\t\tisHidden\n"
+            "\t\tsummarizeBy: sum\n"
+            "\n"
+            "\t/// Total gross sales\n"
+            "\tmeasure 'Gross Sales' = SUM(Sales[Amount])\n"
+            "\t\tformatString: $#,0.00\n"
+            "\t\tdisplayFolder: Sales\\Totals\n"
+        ),
+    )
+
+    table = parse_table_document(document)
+    amount = table.columns[0]
+    gross_sales = table.measures[0]
+
+    assert table.description == "Sales fact table"
+    assert table.is_hidden is True
+    assert table.is_private is False
+    assert amount.description == "Gross amount calculated per row"
+    assert amount.expression == "[Quantity] * [Unit Price]"
+    assert amount.data_type == "decimal"
+    assert amount.is_hidden is True
+    assert amount.summarize_by == "sum"
+    assert gross_sales.description == "Total gross sales"
+    assert gross_sales.expression == "SUM(Sales[Amount])"
+    assert gross_sales.format_string == "$#,0.00"
+    assert gross_sales.display_folder == "Sales\\Totals"
+
+
 def test_parses_quoted_identifiers_and_escaped_quotes() -> None:
     document = TmdlDocument(
         path=Path("Sales.tmdl"),
