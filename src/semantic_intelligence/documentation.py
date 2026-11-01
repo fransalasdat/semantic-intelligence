@@ -6,6 +6,7 @@ import re
 from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from semantic_intelligence.inventory import ModelInventory
+from semantic_intelligence.audit import audit_inventory
 
 
 def _markdown_text(value: str) -> str:
@@ -37,6 +38,8 @@ def render_markdown(model: ModelInventory) -> str:
         model=model,
         column_count=sum(len(table.columns) for table in model.tables),
         measure_count=sum(len(table.measures) for table in model.tables),
+        hierarchy_count=sum(len(table.hierarchies) for table in model.tables),
+        audit_findings=audit_inventory(model),
     )
 
 

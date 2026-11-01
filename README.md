@@ -2,6 +2,11 @@
 
 **Versión 1.0.0 — Inventario y documentación local de modelos semánticos de Power BI.**
 
+> Rama de desarrollo posterior a 1.0.0: incorpora bloques DAX delimitados,
+> jerarquías y auditoría básica. Estos cambios todavía no constituyen una nueva
+> release; la versión declarada del paquete se actualizará al preparar esa entrega.
+> Ver [cambios en desarrollo](docs/DEVELOPMENT.md) e [historial](CHANGELOG.md).
+
 Semantic Intelligence es un proyecto en Python que transforma los metadatos de proyectos Power BI en información técnica verificable. Lee definiciones TMDL de un proyecto PBIP y genera un inventario JSON y documentación Markdown, con referencias al archivo y línea de origen, sin modificar el proyecto analizado.
 
 En etapas posteriores incorporará explicaciones asistidas por modelos de lenguaje y análisis de impacto entre versiones. La IA será una capa opcional: los resultados determinísticos deberán poder generarse sin enviar información a servicios externos.
@@ -107,10 +112,10 @@ No se requieren `uv`, archivo `.env` ni claves de API.
 Sin opciones de exportación, el comando solo muestra los archivos TMDL descubiertos.
 Con `--output`, integra los lectores actuales de tablas, columnas, medidas y
 relaciones, valida nombres duplicados y referencias de relaciones, y exporta
-un JSON UTF-8 con versión de esquema `0.2`. La carpeta de salida se crea si falta
+un JSON UTF-8 con versión de esquema `0.3` en esta rama (`0.2` en 1.0.0). La carpeta de salida se crea si falta
 y debe estar fuera del proyecto Power BI analizado para proteger la entrada.
 
-La versión de la aplicación (`1.0.0`) y la del formato JSON (`schema_version: "0.2"`)
+La versión de la aplicación y la del formato JSON (`schema_version: "0.3"` en desarrollo)
 son independientes. El esquema JSON sigue en evolución; las clases Python internas
 no se presentan como una API pública estable.
 
@@ -148,7 +153,9 @@ evitando ocultar referencias inválidas mediante la exclusión.
 
 Este primer contrato exporta los
 metadatos soportados por los lectores actuales; todavía no representa toda la
-sintaxis TMDL, particiones o jerarquías.
+sintaxis TMDL ni particiones. Esta rama agrega las jerarquías y sus niveles,
+incluyendo orden, columnas referenciadas y origen; valida columnas inexistentes
+y nombres u ordinales duplicados.
 
 ## Generar documentación Markdown
 
@@ -183,6 +190,11 @@ de origen, agregación, descripción y línea de origen por tabla. Las expresion
 de columnas calculadas se muestran en bloques DAX separados para conservar sus
 saltos de línea.
 
+La sección de jerarquías presenta niveles ordenados por ordinal desde 0, sus
+columnas, descripciones y origen. Si no hay ordinal explícito, se utiliza el orden
+de declaración. Las expresiones DAX delimitadas por tres backticks se extraen
+sin los delimitadores, conservando el contenido relativo al margen de cierre.
+
 La sección de relaciones muestra los extremos (tabla y columna de origen y
 destino), las cardinalidades, la dirección de filtro, el estado activo y las
 otras propiedades explícitas extraídas, junto con el archivo y línea de origen.
@@ -209,6 +221,23 @@ seis medidas de DemoSales carecen de descripción en los archivos versionados.
 No se generan explicaciones de negocio automáticamente. Columnas, medidas y
 relaciones quedan documentadas tanto en JSON como en Markdown.
 
+## Auditoría básica en desarrollo
+
+La exportación ahora incluye `audit_findings` en JSON y una sección de revisión
+en Markdown. Se evalúa el inventario seleccionado, excluyendo las tablas
+automáticas por defecto. No se modifica el modelo ni se ejecutan consultas DAX.
+
+| Regla | Severidad | Evidencia |
+|---|---|---|
+| DOC001 | info | Descripción ausente o vacía en tabla, columna, medida, jerarquía o nivel |
+| REL001 | info | Relación con `isActive: false` explícito |
+| REL002 | warning | Relación con `crossFilteringBehavior: bothDirections` explícito |
+
+Cada hallazgo tiene un identificador de objeto, evidencia, archivo y línea,
+mensaje y acción sugerida. Son puntos para revisar con el responsable del modelo,
+no errores confirmados: una relación inactiva o bidireccional puede ser intencional.
+La ausencia de hallazgos tampoco garantiza la calidad completa del modelo.
+
 ## Modelo de demostración
 
 El proyecto portátil de Power BI disponible en [`examples/demo_sales`](examples/demo_sales) funciona como modelo de referencia para el desarrollo y las pruebas. Sus datos están embebidos en Power Query, por lo que puede abrirse sin rutas locales, credenciales ni fuentes externas.
@@ -224,7 +253,7 @@ El proyecto portátil de Power BI disponible en [`examples/demo_sales`](examples
 ## Roadmap resumido
 
 1. Entregado en 1.0.0: extracción del subconjunto soportado y documentación JSON/Markdown.
-2. Próximo desarrollo: dependencias y reglas de auditoría, ampliando las pruebas con otros modelos.
+2. En esta rama: jerarquías y primeras reglas de auditoría, con validación adicional en AdventureWorks. Dependencias DAX aún pendientes.
 3. Explicaciones asistidas por IA.
 4. Comparación de versiones y análisis de impacto.
 5. Interfaz web local y demostración pública.

@@ -19,7 +19,7 @@ def test_exports_complete_demo_without_changing_source(tmp_path, capsys):
     destination = tmp_path / "reports" / "model.json"
     assert main([str(DEMO_PROJECT), "--output", str(destination)]) == 0
     data = json.loads(destination.read_text(encoding="utf-8"))
-    assert data["schema_version"] == "0.2"
+    assert data["schema_version"] == "0.3"
     assert data["name"] == "demo_sales"
     assert len(data["tables"]) == 3
     assert sum(len(table["columns"]) for table in data["tables"]) == 12

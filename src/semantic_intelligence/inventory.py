@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from semantic_intelligence.discovery import DiscoveredModel
+from semantic_intelligence.audit import audit_inventory
 from semantic_intelligence.output import write_output
 from semantic_intelligence.tmdl.reader import read_tmdl_documents
 from semantic_intelligence.tmdl.relationship_parser import (
@@ -25,15 +26,17 @@ class ModelInventory:
     name: str
     tables: tuple[ParsedTable, ...]
     relationships: tuple[ParsedRelationship, ...]
-    schema_version: str = "0.2"
+    schema_version: str = "0.3"
     excluded_auto_date_tables: tuple[str, ...] = ()
     auto_date_tables_included: bool = False
 
     def to_json(self) -> str:
         """Serialize without machine-specific paths or timestamps."""
 
+        payload = asdict(self)
+        payload["audit_findings"] = [asdict(finding) for finding in audit_inventory(self)]
         return json.dumps(
-            asdict(self),
+            payload,
             ensure_ascii=False,
             indent=2,
             default=_json_value,
@@ -71,6 +74,16 @@ def build_inventory(
                     raise InventoryError(f"Duplicate {label}: {table.name}.{item.name}")
                 names.add(item.name)
         columns.update((table.name, column.name) for column in table.columns)
+        if len({hierarchy.name for hierarchy in table.hierarchies}) != len(table.hierarchies):
+            raise InventoryError(f"Duplicate hierarchy in table: {table.name}")
+        column_names = {column.name for column in table.columns}
+        for hierarchy in table.hierarchies:
+            for level in hierarchy.levels:
+                if level.column not in column_names:
+                    raise InventoryError(
+                        f"Hierarchy {table.name}.{hierarchy.name}, level {level.name} "
+                        f"references an unknown column: {level.column}"
+                    )
 
     relationship_names: set[str] = set()
     for relationship in relationships:

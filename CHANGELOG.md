@@ -1,5 +1,25 @@
 # Historial de cambios
 
+## Sin publicar
+
+Trabajo en `feat/hierarchies-basic-audit`, posterior a 1.0.0:
+
+- Corrige la extracción de medidas y columnas con expresiones delimitadas por
+  tres backticks: no exporta los delimitadores y conserva espacios y saltos de
+  línea relativos al margen de cierre. Informa bloques sin cierre.
+- Agrega jerarquías y niveles con columna referenciada, orden, descripción,
+  visibilidad y archivo y línea de origen; valida duplicados y referencias.
+- Documenta jerarquías en Markdown e incorpora hallazgos determinísticos para
+  descripciones faltantes, relaciones inactivas y filtros bidireccionales.
+- Amplía el JSON al esquema `0.3`: tablas con `hierarchies` y colección raíz
+  `audit_findings`, sin cambiar los campos anteriores.
+- Agrega regresiones sintéticas del escenario AdventureWorks y validación local
+  adicional, sin incorporar sus datos o archivos al repositorio.
+
+Son funcionalidades adicionales al arreglo del DAX. Al publicar, corresponde
+evaluar una versión menor (por ejemplo 1.1.0), en vez de agruparlas como un mero
+parche 1.0.1. No se cambia todavía el número de versión del paquete ni se publica.
+
 ## 1.0.0 — 2026-11-01
 
 Primera versión del flujo local de inventario y documentación PBIP/TMDL,

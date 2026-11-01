@@ -8,6 +8,8 @@
 | Columnas | {{ column_count }} |
 | Medidas | {{ measure_count }} |
 | Relaciones | {{ model.relationships | length }} |
+| Jerarquías | {{ hierarchy_count }} |
+| Hallazgos de revisión | {{ audit_findings | length }} |
 
 ## Tablas
 
@@ -65,6 +67,31 @@ No hay columnas en esta tabla.
 No hay columnas en el inventario.
 {% endfor %}
 
+## Jerarquías
+
+{% for table in model.tables if table.hierarchies %}
+### Jerarquías de tabla: {{ table.name | markdown_text }}
+
+{% for hierarchy in table.hierarchies %}
+#### Jerarquía: {{ hierarchy.name | markdown_text }}
+
+**Descripción:** {{ (hierarchy.description if hierarchy.description is not none else 'Sin descripción en el modelo.') | markdown_text }}
+
+**Oculta:** {{ 'Sí' if hierarchy.is_hidden else 'No' }}.
+
+**Origen:** {{ hierarchy.source_path.as_posix() | markdown_text }}, línea {{ hierarchy.source_line }}.
+
+| Orden (ordinal desde 0) | Nivel | Columna | Descripción | Línea |
+|---:|---|---|---|---:|
+{% for level in hierarchy.levels %}
+| {{ level.ordinal }} | {{ level.name | markdown_text }} | {{ level.column | markdown_text }} | {{ (level.description if level.description is not none else 'Sin descripción en el modelo.') | markdown_text }} | {{ level.source_line }} |
+{% endfor %}
+
+{% endfor %}
+{% else %}
+No hay jerarquías en el inventario.
+{% endfor %}
+
 ## Catálogo de medidas
 
 Las descripciones se toman del modelo original. Si faltan, se indica explícitamente.
@@ -119,4 +146,29 @@ Las propiedades ausentes se muestran como «No especificado en TMDL»; no se res
 
 {% else %}
 No hay relaciones en el inventario.
+{% endfor %}
+
+## Auditoría básica
+
+Estos hallazgos son puntos de revisión, no errores confirmados del modelo. No se ejecuta DAX ni se modifica Power BI.
+Se evalúa el inventario seleccionado; las tablas automáticas excluidas y sus objetos no generan hallazgos.
+DOC001 indica descripción ausente o vacía; REL001, relación explícitamente inactiva; REL002, filtro explícitamente bidireccional.
+
+{% for finding in audit_findings %}
+### {{ finding.rule_id }} — {{ finding.object_name | markdown_text }}
+
+**Severidad:** {{ finding.severity | markdown_text }}. **Tipo:** {{ finding.object_type | markdown_text }}.
+
+**Identificador:** {{ finding.object_id | markdown_text }}.
+
+**Origen:** {{ finding.source_path.as_posix() | markdown_text }}, línea {{ finding.source_line }}.
+
+**Evidencia:** {{ finding.evidence | markdown_text }}.
+
+{{ finding.message | markdown_text }}
+
+**Acción sugerida:** {{ finding.recommendation | markdown_text }}
+
+{% else %}
+Sin hallazgos para las reglas implementadas. Esto no implica una validación completa del modelo.
 {% endfor %}

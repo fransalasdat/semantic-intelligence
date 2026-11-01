@@ -8,6 +8,7 @@ from pathlib import Path
 from jinja2 import TemplateError
 
 from semantic_intelligence import __version__
+from semantic_intelligence.audit import audit_inventory
 from semantic_intelligence.documentation import render_markdown
 from semantic_intelligence.discovery import (
     ProjectDiscoveryError,
@@ -100,6 +101,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Columns: {sum(len(table.columns) for table in inventory.tables)}")
         print(f"Measures: {sum(len(table.measures) for table in inventory.tables)}")
         print(f"Relationships: {len(inventory.relationships)}")
+        print(f"Hierarchies: {sum(len(table.hierarchies) for table in inventory.tables)}")
+        print(f"Audit findings: {len(audit_inventory(inventory))}")
         print(f"Automatic date tables excluded: {len(inventory.excluded_auto_date_tables)}")
         if arguments.output is not None:
             print(f"JSON exported: {arguments.output}")

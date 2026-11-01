@@ -17,6 +17,8 @@ definición conserva su versión **2.0**: su número no es la versión de la apl
 Este documento describe la visión completa y el roadmap, no una lista de
 capacidades disponibles. El alcance verificable de esta entrega, sus límites y
 los comandos de validación se encuentran en [VERSION_1.md](VERSION_1.md).
+En la rama posterior a 1.0.0 se amplían jerarquías y auditoría básica;
+ver [cambios en desarrollo](DEVELOPMENT.md). No son todavía una release nueva.
 Se utilizan dataclasses para el inventario y Jinja2 para Markdown; Pydantic,
 NetworkX, proveedores de IA e interfaz web permanecen como propuestas futuras.
 

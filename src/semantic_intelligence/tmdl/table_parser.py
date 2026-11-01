@@ -44,6 +44,28 @@ class ParsedMeasure:
 
 
 @dataclass(frozen=True)
+class ParsedLevel:
+    """A hierarchy level and its column reference (zero-based ordinal)."""
+
+    name: str
+    column: str
+    ordinal: int
+    source_line: int
+    source_path: Path
+    description: str | None = None
+
+
+@dataclass(frozen=True)
+class ParsedHierarchy:
+    name: str
+    levels: tuple[ParsedLevel, ...]
+    source_line: int
+    source_path: Path
+    description: str | None = None
+    is_hidden: bool = False
+
+
+@dataclass(frozen=True)
 class ParsedTable:
     """A table inventory extracted from one TMDL document."""
 
@@ -56,6 +78,7 @@ class ParsedTable:
     is_private: bool = False
     description: str | None = None
     is_auto_date_table: bool = False
+    hierarchies: tuple[ParsedHierarchy, ...] = ()
 
 
 @dataclass
@@ -72,6 +95,62 @@ class _ObjectBuilder:
     expression_lines: list[str] = field(default_factory=list)
     properties: dict[str, str | None] = field(default_factory=dict)
     expression_finished: bool = False
+    fence_open: bool = False
+    fenced_expression: str | None = None
+
+
+@dataclass
+class _LevelBuilder:
+    name: str
+    source_line: int
+    description: str | None
+    properties: dict[str, str | None] = field(default_factory=dict)
+
+
+@dataclass
+class _HierarchyBuilder:
+    name: str
+    source_line: int
+    description: str | None
+    levels: list[_LevelBuilder] = field(default_factory=list)
+    properties: dict[str, str | None] = field(default_factory=dict)
+
+
+def _finish_hierarchy(
+    builder: _HierarchyBuilder | None,
+    hierarchies: list[ParsedHierarchy],
+    source_path: Path,
+) -> None:
+    if builder is None:
+        return
+    levels: list[ParsedLevel] = []
+    for position, level in enumerate(builder.levels):
+        column = _property(level.properties, "column")
+        if not column:
+            raise TmdlTableParseError(f"Hierarchy {builder.name}, level {level.name}: missing column")
+        ordinal_text = _property(level.properties, "ordinal")
+        try:
+            ordinal = int(ordinal_text) if ordinal_text is not None else position
+        except ValueError as error:
+            raise TmdlTableParseError(f"Invalid hierarchy level ordinal: {ordinal_text}") from error
+        if ordinal < 0:
+            raise TmdlTableParseError(f"Negative hierarchy level ordinal: {ordinal}")
+        levels.append(ParsedLevel(
+            name=level.name, column=_parse_identifier("column " + column, "column"),
+            ordinal=ordinal, source_line=level.source_line, source_path=source_path,
+            description=level.description,
+        ))
+    if not levels:
+        raise TmdlTableParseError(f"Hierarchy {builder.name} has no levels")
+    if len({level.name for level in levels}) != len(levels):
+        raise TmdlTableParseError(f"Duplicate level name in hierarchy {builder.name}")
+    if len({level.ordinal for level in levels}) != len(levels):
+        raise TmdlTableParseError(f"Duplicate level ordinal in hierarchy {builder.name}")
+    hierarchies.append(ParsedHierarchy(
+        name=builder.name, levels=tuple(sorted(levels, key=lambda level: level.ordinal)),
+        source_line=builder.source_line, source_path=source_path,
+        description=builder.description, is_hidden=_boolean_property(builder.properties, "isHidden"),
+    ))
 
 
 def _indent_width(line: str) -> int:
@@ -204,6 +283,12 @@ def _description(lines: list[str]) -> str | None:
 def _expression(builder: _ObjectBuilder) -> str | None:
     """Normalize an inline or indented TMDL expression."""
 
+    if builder.fence_open:
+        raise TmdlTableParseError(
+            f"Unclosed expression block: {builder.source_path}:{builder.source_line}"
+        )
+    if builder.fenced_expression is not None:
+        return builder.fenced_expression
     continuation = dedent("\n".join(builder.expression_lines)).strip()
     parts = [
         part
@@ -276,8 +361,10 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
     table_annotations: dict[str, str | None] = {}
     columns: list[ParsedColumn] = []
     measures: list[ParsedMeasure] = []
+    hierarchies: list[ParsedHierarchy] = []
     pending_descriptions: dict[int, list[str]] = {}
     active_object: _ObjectBuilder | None = None
+    active_hierarchy: _HierarchyBuilder | None = None
 
     for line_number, line in enumerate(
         document.content.splitlines(),
@@ -285,6 +372,24 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
     ):
         stripped_line = line.strip()
         indentation = _indent_width(line)
+
+        # Fenced expressions are verbatim: declarations, comments and indentation
+        # inside them must never be interpreted as model metadata.
+        if active_object is not None and active_object.fence_open:
+            if stripped_line == "```":
+                def remove_margin(content: str) -> str:
+                    prefix_length = len(content) - len(content.lstrip(" \t"))
+                    prefix = content[:prefix_length].expandtabs(4)
+                    return prefix[indentation:] + content[prefix_length:]
+                active_object.fenced_expression = "\n".join(
+                    remove_margin(content) for content in active_object.expression_lines
+                )
+                active_object.fence_open = False
+                active_object.expression_finished = True
+                active_object.inline_expression = None
+            else:
+                active_object.expression_lines.append(line)
+            continue
 
         if stripped_line.startswith("///"):
             pending_descriptions.setdefault(indentation, []).append(
@@ -299,6 +404,33 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
                 and not active_object.expression_finished
             ):
                 active_object.expression_lines.append("")
+            continue
+
+        if indentation <= 4 and active_hierarchy is not None:
+            _finish_hierarchy(active_hierarchy, hierarchies, document.relative_path)
+            active_hierarchy = None
+
+        if indentation == 4 and stripped_line.startswith("hierarchy "):
+            _finish_object(active_object, columns, measures)
+            active_object = None
+            active_hierarchy = _HierarchyBuilder(
+                name=_parse_identifier(stripped_line, "hierarchy"), source_line=line_number,
+                description=_description(pending_descriptions.pop(4, [])),
+            )
+            continue
+
+        if active_hierarchy is not None:
+            if indentation == 8 and stripped_line.startswith("level "):
+                active_hierarchy.levels.append(_LevelBuilder(
+                    name=_parse_identifier(stripped_line, "level"), source_line=line_number,
+                    description=_description(pending_descriptions.pop(8, [])),
+                ))
+            elif indentation == 8:
+                key, value = _parse_property(stripped_line)
+                active_hierarchy.properties[key] = value
+            elif indentation == 12 and active_hierarchy.levels:
+                key, value = _parse_property(stripped_line)
+                active_hierarchy.levels[-1].properties[key] = value
             continue
 
         if indentation == 0 and stripped_line.startswith("table "):
@@ -336,6 +468,7 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
                 ),
                 has_expression=has_expression,
                 inline_expression=inline_expression,
+                fence_open=inline_expression == "```",
             )
             continue
 
@@ -369,6 +502,7 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
             active_object.expression_lines.append(line)
 
     _finish_object(active_object, columns, measures)
+    _finish_hierarchy(active_hierarchy, hierarchies, document.relative_path)
 
     if not table_declarations:
         raise TmdlTableParseError(
@@ -393,6 +527,7 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
         is_hidden=_boolean_property(table_properties, "isHidden"),
         is_private=_boolean_property(table_properties, "isPrivate"),
         description=table_description,
+        hierarchies=tuple(hierarchies),
         is_auto_date_table=any(
             (table_annotations.get(name) or "").casefold() == "true"
             for name in ("__PBI_LocalDateTable", "__PBI_TemplateDateTable")
