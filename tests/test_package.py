@@ -1,5 +1,8 @@
 from semantic_intelligence import __version__
+from pathlib import Path
+import tomllib
 
 
 def test_package_exposes_version() -> None:
-    assert __version__ == "0.1.0"
+    project = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    assert __version__ == project["project"]["version"]

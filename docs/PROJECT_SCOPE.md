@@ -7,6 +7,19 @@
 **Tecnologías previstas:** Python, PBIP, TMDL, DAX, JSON, Git y modelos de lenguaje<br>
 **Modalidad:** desarrollo incremental orientado a una solución reproducible y a portfolio profesional
 
+### Estado al 1 de noviembre de 2026
+
+La aplicación tiene preparada localmente la versión **1.0.0**, correspondiente al
+MVP de inventario y documentación del subconjunto TMDL implementado: tablas,
+columnas, medidas y relaciones, con salidas JSON y Markdown. El documento de
+definición conserva su versión **2.0**: su número no es la versión de la aplicación.
+
+Este documento describe la visión completa y el roadmap, no una lista de
+capacidades disponibles. El alcance verificable de esta entrega, sus límites y
+los comandos de validación se encuentran en [VERSION_1.md](VERSION_1.md).
+Se utilizan dataclasses para el inventario y Jinja2 para Markdown; Pydantic,
+NetworkX, proveedores de IA e interfaz web permanecen como propuestas futuras.
+
 ## 1. Propósito
 
 Semantic Intelligence será una herramienta local y de solo lectura para documentar, analizar y auditar modelos semánticos de Power BI.

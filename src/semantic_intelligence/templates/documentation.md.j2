@@ -1,0 +1,122 @@
+# Modelo: {{ model.name | markdown_text }}
+
+## Resumen
+
+| Elemento | Cantidad |
+|---|---:|
+| Tablas | {{ model.tables | length }} |
+| Columnas | {{ column_count }} |
+| Medidas | {{ measure_count }} |
+| Relaciones | {{ model.relationships | length }} |
+
+## Tablas
+
+{% if model.tables %}
+| Tabla | Columnas | Medidas | Oculta | Privada | Archivo de origen | Línea |
+|---|---:|---:|---|---|---|---:|
+{% for table in model.tables %}
+| {{ table.name | markdown_text }} | {{ table.columns | length }} | {{ table.measures | length }} | {{ 'Sí' if table.is_hidden else 'No' }} | {{ 'Sí' if table.is_private else 'No' }} | {{ table.source_path.as_posix() | markdown_text }} | {{ table.source_line }} |
+{% endfor %}
+{% else %}
+No hay tablas en el inventario.
+{% endif %}
+
+Las rutas de origen son relativas a la carpeta definition/ del modelo.
+{% if model.auto_date_tables_included %}
+Se incluyen las tablas automáticas de fechas de Power BI y sus relaciones.
+{% else %}
+Se excluyen del inventario las tablas automáticas de fechas identificadas por anotaciones de Power BI y sus relaciones.
+{% endif %}
+{% if model.excluded_auto_date_tables %}
+
+Tablas automáticas excluidas ({{ model.excluded_auto_date_tables | length }}):
+
+{% for name in model.excluded_auto_date_tables %}
+- {{ name | markdown_text }}
+{% endfor %}
+{% endif %}
+
+## Diccionario de columnas
+
+{% for table in model.tables %}
+### Columnas de tabla: {{ table.name | markdown_text }}
+
+**Archivo de origen:** {{ table.source_path.as_posix() | markdown_text }}.
+
+{% if table.columns %}
+| Columna | Tipo de dato | Oculta | Columna de origen | Agregación | Descripción | Línea |
+|---|---|---|---|---|---|---:|
+{% for column in table.columns %}
+| {{ column.name | markdown_text }} | {{ (column.data_type if column.data_type is not none else 'No especificado') | markdown_text }} | {{ 'Sí' if column.is_hidden else 'No' }} | {{ (column.source_column if column.source_column is not none else 'No especificada') | markdown_text }} | {{ (column.summarize_by if column.summarize_by is not none else 'No especificada') | markdown_text }} | {{ (column.description if column.description is not none else 'Sin descripción en el modelo.') | markdown_text }} | {{ column.source_line }} |
+{% endfor %}
+{% else %}
+No hay columnas en esta tabla.
+{% endif %}
+
+{% for column in table.columns if column.expression is not none %}
+#### Expresión de columna: {{ column.name | markdown_text }}
+
+**Origen:** {{ column.source_path.as_posix() | markdown_text }}, línea {{ column.source_line }}.
+
+{{ column.expression | dax_block }}
+
+{% endfor %}
+{% else %}
+No hay columnas en el inventario.
+{% endfor %}
+
+## Catálogo de medidas
+
+Las descripciones se toman del modelo original. Si faltan, se indica explícitamente.
+
+{% for table in model.tables if table.measures %}
+### Tabla: {{ table.name | markdown_text }}
+
+{% for measure in table.measures %}
+#### Medida: {{ measure.name | markdown_text }}
+
+**Descripción:** {{ (measure.description if measure.description is not none else 'Sin descripción en el modelo.') | markdown_text }}
+
+**Carpeta:** {{ (measure.display_folder if measure.display_folder is not none else 'Sin carpeta') | markdown_text }}
+
+**Formato:** {{ (measure.format_string if measure.format_string is not none else 'No especificado') | markdown_text }}
+
+**Origen:** {{ measure.source_path.as_posix() | markdown_text }}, línea {{ measure.source_line }}.
+
+{% if measure.expression is not none %}
+{{ measure.expression | dax_block }}
+{% else %}
+Sin expresión DAX en el modelo.
+{% endif %}
+
+{% endfor %}
+{% else %}
+No hay medidas en el inventario.
+{% endfor %}
+
+## Relaciones
+
+Origen y destino corresponden a fromColumn y toColumn del TMDL; no indican por sí solos la dirección de propagación del filtro.
+Las propiedades ausentes se muestran como «No especificado en TMDL»; no se resuelven sus valores predeterminados.
+
+{% for relationship in model.relationships %}
+### Relación: {{ relationship.name | markdown_text }}
+
+**Origen del metadato:** {{ relationship.source_path.as_posix() | markdown_text }}, línea {{ relationship.source_line }}.
+
+| Propiedad | Valor |
+|---|---|
+| Tabla de origen | {{ relationship.from_column.table | markdown_text }} |
+| Columna de origen | {{ relationship.from_column.column | markdown_text }} |
+| Tabla de destino | {{ relationship.to_column.table | markdown_text }} |
+| Columna de destino | {{ relationship.to_column.column | markdown_text }} |
+{% for key, label in [('fromCardinality', 'Cardinalidad de origen'), ('toCardinality', 'Cardinalidad de destino'), ('crossFilteringBehavior', 'Dirección de filtro'), ('isActive', 'Activa')] %}
+| {{ label }} | {{ (relationship.property_value(key) if relationship.property_value(key) is not none else 'No especificado en TMDL') | markdown_text }} |
+{% endfor %}
+{% for key, value in relationship.properties if key not in ['fromCardinality', 'toCardinality', 'crossFilteringBehavior', 'isActive'] %}
+| {{ key | markdown_text }} | {{ value | markdown_text }} |
+{% endfor %}
+
+{% else %}
+No hay relaciones en el inventario.
+{% endfor %}

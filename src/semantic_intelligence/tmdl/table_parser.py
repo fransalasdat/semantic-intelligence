@@ -55,6 +55,7 @@ class ParsedTable:
     is_hidden: bool = False
     is_private: bool = False
     description: str | None = None
+    is_auto_date_table: bool = False
 
 
 @dataclass
@@ -272,6 +273,7 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
 
     table_declarations: list[tuple[int, str, str | None]] = []
     table_properties: dict[str, str | None] = {}
+    table_annotations: dict[str, str | None] = {}
     columns: list[ParsedColumn] = []
     measures: list[ParsedMeasure] = []
     pending_descriptions: dict[int, list[str]] = {}
@@ -340,6 +342,12 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
         if indentation == 4:
             _finish_object(active_object, columns, measures)
             active_object = None
+            if stripped_line.startswith("annotation "):
+                name, _, value = _parse_identifier_and_expression(
+                    stripped_line, "annotation"
+                )
+                table_annotations[name] = value
+                continue
             property_name, property_value = _parse_property(stripped_line)
             table_properties[property_name] = property_value
             continue
@@ -385,6 +393,10 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
         is_hidden=_boolean_property(table_properties, "isHidden"),
         is_private=_boolean_property(table_properties, "isPrivate"),
         description=table_description,
+        is_auto_date_table=any(
+            (table_annotations.get(name) or "").casefold() == "true"
+            for name in ("__PBI_LocalDateTable", "__PBI_TemplateDateTable")
+        ),
     )
 
 

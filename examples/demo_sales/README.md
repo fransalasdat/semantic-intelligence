@@ -20,3 +20,23 @@ La carpeta `data/` conserva los CSV originales únicamente como referencia legib
 - Un reporte mínimo con una página vacía.
 
 El modelo también conserva algunas decisiones de modelado mejorables. Esto permite utilizarlo como caso controlado para validar las reglas de auditoría del proyecto.
+
+## Inventario esperado en la versión 1.0.0
+
+| Modo | Tablas | Columnas | Medidas | Relaciones |
+|---|---:|---:|---:|---:|
+| Predeterminado, sin tablas automáticas | 3 | 12 | 6 | 2 |
+| Con `--include-auto-date-tables` | 5 | 26 | 6 | 3 |
+
+El modelo contiene tablas automáticas de fechas identificadas por anotaciones de
+Power BI. Se excluyen de los resultados por defecto junto con sus relaciones;
+sus archivos se conservan intactos. Las seis medidas no tienen descripciones
+guardadas en los TMDL actuales, por lo que la documentación indica su ausencia.
+
+Desde la raíz del repositorio:
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --output output/model.json --markdown output/documentation.md
+```
+
+Las reglas de auditoría todavía no están implementadas en la versión 1.0.0.

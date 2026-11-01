@@ -25,6 +25,30 @@ def _parse_demo_tables():
     return parse_table_documents(documents)
 
 
+@pytest.mark.parametrize("annotation", ["__PBI_LocalDateTable", "__PBI_TemplateDateTable"])
+def test_identifies_automatic_dates_by_table_annotation_not_name(annotation):
+    document = TmdlDocument(
+        path=Path("tables/Renamed.tmdl"), relative_path=Path("tables/Renamed.tmdl"),
+        kind=TmdlDocumentKind.TABLE,
+        content=f"table Renamed\n\tannotation {annotation} = true\n",
+    )
+    assert parse_table_document(document).is_auto_date_table is True
+
+
+@pytest.mark.parametrize("extra", [
+    "", "\tannotation __PBI_LocalDateTable = false\n",
+    "\tcolumn Id\n\t\tannotation __PBI_LocalDateTable = true\n",
+])
+def test_does_not_exclude_business_tables_by_name_hidden_flag_or_nested_annotation(extra):
+    document = TmdlDocument(
+        path=Path("tables/LocalDateTable_Business.tmdl"),
+        relative_path=Path("tables/LocalDateTable_Business.tmdl"),
+        kind=TmdlDocumentKind.TABLE,
+        content="table LocalDateTable_Business\n\tisHidden\n" + extra,
+    )
+    assert parse_table_document(document).is_auto_date_table is False
+
+
 def test_parses_all_demo_tables() -> None:
     tables = _parse_demo_tables()
 

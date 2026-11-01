@@ -3,10 +3,18 @@ from pathlib import Path
 import pytest
 
 from semantic_intelligence.__main__ import main
+from semantic_intelligence import __version__
 
 
 PROJECT_ROOT = Path(__file__).parents[1]
 DEMO_PROJECT = PROJECT_ROOT / "examples" / "demo_sales"
+
+
+def test_cli_version_without_project(capsys):
+    with pytest.raises(SystemExit) as result:
+        main(["--version"])
+    assert result.value.code == 0
+    assert capsys.readouterr().out == f"semantic-intelligence {__version__}\n"
 
 
 def test_cli_discovers_demo_project(
