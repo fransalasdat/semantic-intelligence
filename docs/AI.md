@@ -2,6 +2,8 @@
 
 Capacidad opcional incluida en **Semantic Intelligence 2.0.0**.
 El extractor, la auditoría y las salidas habituales funcionan sin llamar a IA.
+El [resumen de entradas y salidas del README](../README.md#entrada-y-salidas)
+distingue el inventario JSON, el documento Markdown y el informe JSON de IA.
 
 ## Ollama local (predeterminado)
 

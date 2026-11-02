@@ -9,6 +9,68 @@ Semantic Intelligence es un proyecto en Python que transforma los metadatos de p
 
 La IA es una capa opcional para proponer documentación. El inventario y la auditoría funcionan de forma independiente. El análisis de impacto entre versiones continúa en el roadmap.
 
+## Entrada y salidas
+
+**Le pasás un proyecto Power BI en formato PBIP/TMDL y elegís qué archivos generar:
+un inventario técnico en JSON y una documentación para leer en Markdown.**
+Si activás la IA, también se guarda un informe JSON con sus definiciones propuestas.
+
+La entrada puede ser la carpeta del proyecto o su archivo `.pbip`, acompañado
+por la carpeta `*.SemanticModel/definition` y sus archivos `.tmdl`. El `.pbip`
+aislado no contiene esas definiciones. Para este flujo, un PBIX debe convertirse
+previamente a PBIP/TMDL.
+
+| Archivo de salida (nombre de ejemplo) | Qué contiene | Uso | Opción |
+|---|---|---|---|
+| **`modelo.json`** | Inventario de metadatos: tablas, columnas, medidas y DAX, relaciones, jerarquías, particiones y revisiones soportadas, con referencias de origen. | Procesar el modelo con código u otras herramientas. No es una exportación de las filas de datos del negocio. | `--output` |
+| **`documentacion.md`** | Documento legible con estructura, descripciones disponibles, comportamiento DAX reconocido, relaciones, orígenes, auditoría y validaciones pendientes. Con IA incorpora definiciones propuestas y marcadas. | Comprender, revisar y mantener el modelo. Se abre en un visor Markdown, por ejemplo la vista previa de VS Code. | `--markdown` |
+| **`definiciones_ia.json`**, opcional | Respuestas de IA, procedencia y progreso de los lotes en el modo completo. Se conserva separado del inventario técnico. | Revisar las propuestas, reanudar lotes y regenerar el Markdown desde respuestas guardadas. | `--ai-output`, junto con `--explain-all` o `--explain-measure` |
+
+Las dos salidas principales son el inventario JSON y el documento Markdown.
+El JSON de IA es un archivo de apoyo opcional. Los nombres y rutas los elegís
+en el comando: no hay nombres de salida fijos. **Pasar solamente la entrada
+sin opciones de exportación muestra los archivos descubiertos en consola; no crea estos archivos.**
+
+### Ejemplo: inventario y documentación técnica sin IA
+
+Desde la raíz del repositorio, con el [entorno preparado](#desarrollo-local):
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales/demo_sales.pbip `
+  --output output/modelo.json `
+  --markdown output/documentacion.md
+```
+
+Genera **dos archivos**: `output/modelo.json` y `output/documentacion.md`.
+El Markdown usa las descripciones originales disponibles y el análisis estático;
+las definiciones de negocio ausentes requieren información del autor o enriquecimiento con IA.
+
+### Ejemplo: los tres archivos, con definiciones propuestas por IA
+
+Con Ollama disponible y el [extra local y el modelo configurados](docs/AI.md):
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales/demo_sales.pbip `
+  --output output/modelo.json `
+  --explain-all --ai-provider ollama `
+  --ai-output output/definiciones_ia.json `
+  --markdown output/documentacion.md
+```
+
+Genera **tres archivos**: `output/modelo.json`, `output/definiciones_ia.json`
+y `output/documentacion.md`. Las definiciones de IA se incorporan al Markdown
+como propuestas identificadas; sus respuestas y metadatos permanecen en el informe IA.
+
+Para presentar respuestas ya guardadas se usa `--ai-report`: ese JSON es una
+**entrada** para regenerar el Markdown, no una salida adicional. `--ai-context`
+permite guardar, aparte, un JSON auxiliar con el contexto de una medida para
+inspeccionarlo antes de consultar a un proveedor.
+
+La CLI 2.0.0 exporta nativamente **JSON y Markdown**. Las vistas HTML utilizadas
+para revisar el ejemplo son previsualizaciones preparadas a partir del Markdown;
+no hay exportación nativa a HTML, PDF o Word en esta versión.
+Las rutas de salida deben ser distintas y quedar fuera del proyecto Power BI analizado.
+
 ## Estado del proyecto
 
 La versión 2.0.0 amplía el inventario inicial con documentación explicativa y revisión técnica. Permite:
@@ -109,7 +171,7 @@ Para comprobar la versión y consultar las opciones:
 
 Git se utiliza para descargar y versionar el proyecto. Power BI Desktop se
 necesita para crear o editar el PBIP, pero no para ejecutar este extractor.
-No se requieren `uv`, archivo `.env` ni claves de API.
+La exportación sin IA no requiere `uv`, archivo `.env` ni claves de API.
 
 ## Exportar el inventario a JSON
 

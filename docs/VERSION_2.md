@@ -75,6 +75,25 @@ quedan excluidos del repositorio. Ver [configuración de IA](AI.md).
 
 ## Uso
 
+### Archivos de entrada y salida
+
+La entrada es la carpeta PBIP/TMDL o un `.pbip` acompañado por las carpetas de su
+modelo. Las salidas se solicitan explícitamente:
+
+| Salida | Finalidad | Opción |
+|---|---|---|
+| `modelo.json` | Inventario técnico de metadatos y revisiones soportadas, para procesar con otras herramientas | `--output` |
+| `documentacion.md` | Documento para lectura y revisión técnica/funcional; con IA incluye definiciones propuestas | `--markdown` |
+| `definiciones_ia.json` (opcional) | Respuestas, procedencia y progreso de IA; apoyo para revisión, reanudación y regeneración | `--ai-output`, con un modo de explicación |
+
+Los nombres y rutas son elegidos por quien ejecuta el comando. Pasar únicamente
+la entrada muestra el descubrimiento en consola, sin exportar estos archivos.
+`--ai-report` recibe un JSON existente como entrada; `--ai-context` guarda un
+contexto JSON auxiliar para una medida. La CLI 2.0.0 exporta JSON y Markdown;
+las previsualizaciones HTML del ejemplo no son una exportación nativa.
+
+### Comandos
+
 Inventario y documentación técnica sin consultar proveedores:
 
 ```powershell
@@ -84,7 +103,7 @@ Inventario y documentación técnica sin consultar proveedores:
 Generar definiciones con Ollama local:
 
 ```powershell
-.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --explain-all --ai-provider ollama --ai-output output/demo_sales_definitions_ai.json --markdown output/demo_sales_ai.md
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --output output/model.json --explain-all --ai-provider ollama --ai-output output/demo_sales_definitions_ai.json --markdown output/demo_sales_ai.md
 ```
 
 Los lotes se guardan progresivamente. Para reanudar, repetir el comando con el
