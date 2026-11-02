@@ -1,0 +1,833 @@
+{
+  "schema_version": "ai-batch-0.1",
+  "provider": "Codex",
+  "model": "no registrado",
+  "model_id": null,
+  "model_id_status": "not_recorded",
+  "response_schema_version": "object-definition-1",
+  "prompt_version": "business-definitions-4",
+  "publication_policy": "contextual-definitions-1",
+  "source_sha256": "d9e3f5c607ffe8ac5407b8791b8ce90d8c5a57a42b37867cbbaa66bd70d53484",
+  "generated_at": "2026-11-02T15:14:52.778939+00:00",
+  "revised_at": "2026-11-02T15:58:51.561517+00:00",
+  "generation_method": "Redacción y revisión contextual por el asistente de Codex. No es una ejecución completa de Ollama.",
+  "total_objects": 24,
+  "completed_objects": 24,
+  "status": "complete",
+  "review_status": "pending_business_validation",
+  "objects": {
+    "model/demo_sales": {
+      "source": {
+        "object_id": "model/demo_sales",
+        "object_type": "model",
+        "name": "demo_sales",
+        "table_name": null,
+        "source_path": "model.tmdl",
+        "source_line": 1,
+        "metadata": {
+          "name": "demo_sales",
+          "table_count": 3,
+          "data_owner": null
+        }
+      },
+      "explanation": {
+        "business_name": "Análisis de ventas y rentabilidad",
+        "definition": "Modelo orientado al análisis de ventas, costos y rentabilidad bruta. Relaciona los registros de ventas con un calendario y un catálogo de productos para estudiar la evolución temporal y la composición por producto y categoría. Sus indicadores permiten analizar el importe vendido, el costo asociado, la utilidad y el margen bruto, los identificadores de venta distintos y el importe medio por identificador.",
+        "validation_notes": [
+          "Confirmar el significado funcional de IdVenta antes de interpretar los identificadores distintos como operaciones de negocio."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimFecha": {
+      "source": {
+        "object_id": "table/DimFecha",
+        "object_type": "table",
+        "name": "DimFecha",
+        "table_name": "DimFecha",
+        "source_path": "tables/DimFecha.tmdl",
+        "source_line": 1,
+        "metadata": {
+          "name": "DimFecha",
+          "source_path": "tables/DimFecha.tmdl",
+          "source_line": 1,
+          "is_hidden": false,
+          "is_private": false,
+          "description": null,
+          "is_auto_date_table": false,
+          "partitions": [
+            {
+              "name": "DimFecha",
+              "source_path": "tables/DimFecha.tmdl",
+              "source_line": 38,
+              "source_type": "m",
+              "mode": "import",
+              "expression_sha256": "e2ea8515458ff9bbac2885214111dc619031aa11aff8e1db0219399ae474f86d",
+              "origin": "embedded_table",
+              "functions": [
+                "#table"
+              ]
+            }
+          ]
+        }
+      },
+      "explanation": {
+        "business_name": "Calendario de análisis",
+        "definition": "Tabla de referencia temporal que aporta fecha, año y mes para organizar el análisis de ventas. Su campo Fecha se conecta con la fecha registrada en FactVentas, permitiendo que las selecciones del calendario filtren las ventas y sus indicadores. Año y Mes proporcionan agrupaciones para comparar períodos.",
+        "validation_notes": [
+          "Confirmar si las agrupaciones corresponden al calendario civil o a un calendario fiscal."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimFecha/column/Fecha": {
+      "source": {
+        "object_id": "table/DimFecha/column/Fecha",
+        "object_type": "column",
+        "name": "Fecha",
+        "table_name": "DimFecha",
+        "source_path": "tables/DimFecha.tmdl",
+        "source_line": 4,
+        "metadata": {
+          "name": "Fecha",
+          "source_line": 4,
+          "source_path": "tables/DimFecha.tmdl",
+          "data_type": "dateTime",
+          "is_hidden": false,
+          "source_column": "Fecha",
+          "summarize_by": "none",
+          "expression": null,
+          "description": null,
+          "format_string": "Long Date"
+        }
+      },
+      "explanation": {
+        "business_name": "Fecha del calendario",
+        "definition": "Día de referencia del calendario que se vincula con FactVentas[Fecha]. Actúa como eje temporal de las ventas y permite que la selección de fechas del calendario afecte los registros considerados por las medidas.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimFecha/column/A%C3%B1o": {
+      "source": {
+        "object_id": "table/DimFecha/column/A%C3%B1o",
+        "object_type": "column",
+        "name": "Año",
+        "table_name": "DimFecha",
+        "source_path": "tables/DimFecha.tmdl",
+        "source_line": 20,
+        "metadata": {
+          "name": "Año",
+          "source_line": 20,
+          "source_path": "tables/DimFecha.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "Año",
+          "summarize_by": "sum",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Año de análisis",
+        "definition": "Componente anual asociado a la fecha del calendario. Se utiliza para agrupar y filtrar las ventas por año y comparar la evolución de los indicadores entre períodos anuales.",
+        "validation_notes": [
+          "Confirmar si representa año civil o fiscal."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimFecha/column/Mes": {
+      "source": {
+        "object_id": "table/DimFecha/column/Mes",
+        "object_type": "column",
+        "name": "Mes",
+        "table_name": "DimFecha",
+        "source_path": "tables/DimFecha.tmdl",
+        "source_line": 29,
+        "metadata": {
+          "name": "Mes",
+          "source_line": 29,
+          "source_path": "tables/DimFecha.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "Mes",
+          "summarize_by": "sum",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Mes de análisis",
+        "definition": "Componente mensual asociado a la fecha del calendario, almacenado como entero. Permite agrupar las ventas por mes; al analizar varios años, debe combinarse con Año para distinguir el mismo mes de períodos diferentes.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimProducto": {
+      "source": {
+        "object_id": "table/DimProducto",
+        "object_type": "table",
+        "name": "DimProducto",
+        "table_name": "DimProducto",
+        "source_path": "tables/DimProducto.tmdl",
+        "source_line": 1,
+        "metadata": {
+          "name": "DimProducto",
+          "source_path": "tables/DimProducto.tmdl",
+          "source_line": 1,
+          "is_hidden": false,
+          "is_private": false,
+          "description": null,
+          "is_auto_date_table": false,
+          "partitions": [
+            {
+              "name": "DimProducto",
+              "source_path": "tables/DimProducto.tmdl",
+              "source_line": 29,
+              "source_type": "m",
+              "mode": "import",
+              "expression_sha256": "7a2b86ef3279a9c10464bbf56483608613ca2fa376fe24226fb8d5f6c605aa14",
+              "origin": "embedded_table",
+              "functions": [
+                "#table"
+              ]
+            }
+          ]
+        }
+      },
+      "explanation": {
+        "business_name": "Catálogo de productos",
+        "definition": "Tabla descriptiva que reúne el identificador, el nombre y la categoría de los productos. Relaciona esas etiquetas de negocio con los registros de FactVentas mediante IdProducto. Permite segmentar y comparar ventas, costos y rentabilidad por producto o categoría sin repetir esos atributos en cada registro de ventas.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimProducto/column/IdProducto": {
+      "source": {
+        "object_id": "table/DimProducto/column/IdProducto",
+        "object_type": "column",
+        "name": "IdProducto",
+        "table_name": "DimProducto",
+        "source_path": "tables/DimProducto.tmdl",
+        "source_line": 4,
+        "metadata": {
+          "name": "IdProducto",
+          "source_line": 4,
+          "source_path": "tables/DimProducto.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "IdProducto",
+          "summarize_by": "none",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Identificador de producto",
+        "definition": "Código de producto utilizado para conectar el catálogo DimProducto con los registros de FactVentas. Permite asociar a cada registro sus etiquetas de producto y categoría y utilizar esos atributos en la segmentación de los indicadores.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimProducto/column/Producto": {
+      "source": {
+        "object_id": "table/DimProducto/column/Producto",
+        "object_type": "column",
+        "name": "Producto",
+        "table_name": "DimProducto",
+        "source_path": "tables/DimProducto.tmdl",
+        "source_line": 13,
+        "metadata": {
+          "name": "Producto",
+          "source_line": 13,
+          "source_path": "tables/DimProducto.tmdl",
+          "data_type": "string",
+          "is_hidden": false,
+          "source_column": "Producto",
+          "summarize_by": "none",
+          "expression": null,
+          "description": null,
+          "format_string": null
+        }
+      },
+      "explanation": {
+        "business_name": "Nombre del producto",
+        "definition": "Nombre descriptivo del producto utilizado como etiqueta de negocio en tablas, gráficos y filtros. Permite presentar y comparar los indicadores por producto sin utilizar solamente su código técnico.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/DimProducto/column/Categoria": {
+      "source": {
+        "object_id": "table/DimProducto/column/Categoria",
+        "object_type": "column",
+        "name": "Categoria",
+        "table_name": "DimProducto",
+        "source_path": "tables/DimProducto.tmdl",
+        "source_line": 21,
+        "metadata": {
+          "name": "Categoria",
+          "source_line": 21,
+          "source_path": "tables/DimProducto.tmdl",
+          "data_type": "string",
+          "is_hidden": false,
+          "source_column": "Categoria",
+          "summarize_by": "none",
+          "expression": null,
+          "description": null,
+          "format_string": null
+        }
+      },
+      "explanation": {
+        "business_name": "Categoría del producto",
+        "definition": "Clasificación que agrupa productos para analizar resultados a un nivel más amplio que el producto individual. Se utiliza para segmentar y comparar ventas, costos y rentabilidad entre los grupos definidos en el catálogo.",
+        "validation_notes": [
+          "El criterio de clasificación y el mantenimiento de las categorías no están documentados en el modelo."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas": {
+      "source": {
+        "object_id": "table/FactVentas",
+        "object_type": "table",
+        "name": "FactVentas",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 1,
+        "metadata": {
+          "name": "FactVentas",
+          "source_path": "tables/FactVentas.tmdl",
+          "source_line": 1,
+          "is_hidden": false,
+          "is_private": false,
+          "description": null,
+          "is_auto_date_table": false,
+          "partitions": [
+            {
+              "name": "FactVentas",
+              "source_path": "tables/FactVentas.tmdl",
+              "source_line": 122,
+              "source_type": "m",
+              "mode": "import",
+              "expression_sha256": "9b71db6111fa0fb25658389ae331d0b04164dd4763e6bdfd307b224afe95d97f",
+              "origin": "embedded_table",
+              "functions": [
+                "#table"
+              ]
+            }
+          ]
+        }
+      },
+      "explanation": {
+        "business_name": "Registros de ventas",
+        "definition": "Tabla de hechos que reúne identificadores de venta y producto, fecha, cantidad y valores unitarios de precio y costo. Es la base de los indicadores de ventas, costos, utilidad, margen y ticket promedio. Se conecta con DimFecha y DimProducto para analizar esos resultados por período, producto y categoría.",
+        "validation_notes": [
+          "Confirmar si el registro representa una venta completa, una línea u otra combinación; IdVenta puede necesitar agrupar varios registros."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/column/IdVenta": {
+      "source": {
+        "object_id": "table/FactVentas/column/IdVenta",
+        "object_type": "column",
+        "name": "IdVenta",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 66,
+        "metadata": {
+          "name": "IdVenta",
+          "source_line": 66,
+          "source_path": "tables/FactVentas.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "IdVenta",
+          "summarize_by": "sum",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Identificador de venta",
+        "definition": "Identificador utilizado por Cantidad Operaciones para contar valores de venta distintos. También determina el denominador de Ticket Promedio a través de esa medida, por lo que su significado afecta la interpretación del importe medio por operación.",
+        "validation_notes": [
+          "Confirmar qué constituye una operación de negocio y si un mismo IdVenta puede aparecer en varios registros."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/column/IdProducto": {
+      "source": {
+        "object_id": "table/FactVentas/column/IdProducto",
+        "object_type": "column",
+        "name": "IdProducto",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 75,
+        "metadata": {
+          "name": "IdProducto",
+          "source_line": 75,
+          "source_path": "tables/FactVentas.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "IdProducto",
+          "summarize_by": "none",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Producto del registro de venta",
+        "definition": "Código que asocia el registro de venta con el catálogo DimProducto. Proporciona el vínculo para analizar las cantidades e importes de FactVentas mediante el nombre y la categoría del producto.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/column/Fecha": {
+      "source": {
+        "object_id": "table/FactVentas/column/Fecha",
+        "object_type": "column",
+        "name": "Fecha",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 84,
+        "metadata": {
+          "name": "Fecha",
+          "source_line": 84,
+          "source_path": "tables/FactVentas.tmdl",
+          "data_type": "dateTime",
+          "is_hidden": false,
+          "source_column": "Fecha",
+          "summarize_by": "none",
+          "expression": null,
+          "description": null,
+          "format_string": "Long Date"
+        }
+      },
+      "explanation": {
+        "business_name": "Fecha asociada a la venta",
+        "definition": "Fecha registrada para el movimiento de venta. Se relaciona con DimFecha[Fecha] para que los filtros de fecha, año y mes delimiten las ventas incluidas en los indicadores.",
+        "validation_notes": [
+          "Confirmar si corresponde a emisión, entrega, contabilización u otro momento del proceso comercial."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/column/Cantidad": {
+      "source": {
+        "object_id": "table/FactVentas/column/Cantidad",
+        "object_type": "column",
+        "name": "Cantidad",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 95,
+        "metadata": {
+          "name": "Cantidad",
+          "source_line": 95,
+          "source_path": "tables/FactVentas.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "Cantidad",
+          "summarize_by": "sum",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Cantidad registrada",
+        "definition": "Cantidad asociada al registro de venta. Se multiplica por PrecioUnitario para calcular Ventas Brutas y por CostoUnitario para calcular Costo Total; representa la base cuantitativa utilizada en ambos importes.",
+        "validation_notes": [
+          "Confirmar la unidad de medida y cómo se registran devoluciones o cantidades negativas."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/column/PrecioUnitario": {
+      "source": {
+        "object_id": "table/FactVentas/column/PrecioUnitario",
+        "object_type": "column",
+        "name": "PrecioUnitario",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 104,
+        "metadata": {
+          "name": "PrecioUnitario",
+          "source_line": 104,
+          "source_path": "tables/FactVentas.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "PrecioUnitario",
+          "summarize_by": "sum",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Precio aplicado por unidad",
+        "definition": "Valor de precio utilizado por unidad de cantidad en el registro de venta. Ventas Brutas calcula el importe del registro multiplicándolo por Cantidad y suma esos resultados en el contexto del análisis.",
+        "validation_notes": [
+          "Confirmar moneda y si el valor incluye impuestos o descuentos."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/column/CostoUnitario": {
+      "source": {
+        "object_id": "table/FactVentas/column/CostoUnitario",
+        "object_type": "column",
+        "name": "CostoUnitario",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 113,
+        "metadata": {
+          "name": "CostoUnitario",
+          "source_line": 113,
+          "source_path": "tables/FactVentas.tmdl",
+          "data_type": "int64",
+          "is_hidden": false,
+          "source_column": "CostoUnitario",
+          "summarize_by": "sum",
+          "expression": null,
+          "description": null,
+          "format_string": "0"
+        }
+      },
+      "explanation": {
+        "business_name": "Costo aplicado por unidad",
+        "definition": "Valor de costo utilizado por unidad de cantidad en el registro de venta. Costo Total lo multiplica por Cantidad; ese resultado participa en Utilidad Bruta y en Margen % a través de las medidas de apoyo.",
+        "validation_notes": [
+          "Confirmar moneda, método de valoración y conceptos incluidos en este costo."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/measure/Ventas%20Brutas": {
+      "source": {
+        "object_id": "table/FactVentas/measure/Ventas%20Brutas",
+        "object_type": "measure",
+        "name": "Ventas Brutas",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 4,
+        "metadata": {
+          "name": "Ventas Brutas",
+          "source_line": 4,
+          "source_path": "tables/FactVentas.tmdl",
+          "expression": "SUMX(\n    FactVentas,\n    FactVentas[Cantidad] *\n    FactVentas[PrecioUnitario]\n)",
+          "format_string": "\\$#,0.00;(\\$#,0.00);\\$#,0.00",
+          "display_folder": "Ventas",
+          "description": null
+        }
+      },
+      "explanation": {
+        "business_name": "Importe de ventas",
+        "definition": "Importe de ventas calculado a partir de la cantidad y el precio unitario de los registros seleccionados. Permite comparar el volumen monetario representado por las ventas entre períodos, productos y categorías. Es la base de Utilidad Bruta, Margen % y Ticket Promedio.",
+        "validation_notes": [
+          "El nombre Brutas no demuestra si el precio incluye impuestos o descuentos; ese alcance y la moneda requieren confirmación."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/measure/Costo%20Total": {
+      "source": {
+        "object_id": "table/FactVentas/measure/Costo%20Total",
+        "object_type": "measure",
+        "name": "Costo Total",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 17,
+        "metadata": {
+          "name": "Costo Total",
+          "source_line": 17,
+          "source_path": "tables/FactVentas.tmdl",
+          "expression": "SUMX(\n    FactVentas,\n    FactVentas[Cantidad] *\n    FactVentas[CostoUnitario]\n)",
+          "format_string": "0",
+          "display_folder": "Costos",
+          "description": null
+        }
+      },
+      "explanation": {
+        "business_name": "Costo de las cantidades vendidas",
+        "definition": "Importe de costo asociado a las cantidades registradas en las ventas seleccionadas. Se obtiene aplicando el costo unitario de cada registro a su cantidad y sirve como componente de comparación frente a Ventas Brutas para calcular la utilidad bruta.",
+        "validation_notes": [
+          "El indicador solo incorpora los conceptos reflejados en CostoUnitario; confirmar su alcance contable y moneda."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/measure/Utilidad%20Bruta": {
+      "source": {
+        "object_id": "table/FactVentas/measure/Utilidad%20Bruta",
+        "object_type": "measure",
+        "name": "Utilidad Bruta",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 28,
+        "metadata": {
+          "name": "Utilidad Bruta",
+          "source_line": 28,
+          "source_path": "tables/FactVentas.tmdl",
+          "expression": "[Ventas Brutas] - [Costo Total]",
+          "format_string": "0",
+          "display_folder": "Rentabilidad",
+          "description": null
+        }
+      },
+      "explanation": {
+        "business_name": "Resultado bruto de las ventas",
+        "definition": "Diferencia entre el importe calculado por Ventas Brutas y el costo calculado por Costo Total. Permite evaluar el resultado de las ventas según los precios y costos registrados y comparar su aporte entre períodos o grupos de productos. Es el numerador de Margen %.",
+        "validation_notes": [
+          "No debe interpretarse como utilidad neta sin validar qué conceptos incluyen los precios y costos del modelo."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/measure/Margen%20%25": {
+      "source": {
+        "object_id": "table/FactVentas/measure/Margen%20%25",
+        "object_type": "measure",
+        "name": "Margen %",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 35,
+        "metadata": {
+          "name": "Margen %",
+          "source_line": 35,
+          "source_path": "tables/FactVentas.tmdl",
+          "expression": "DIVIDE(\n    [Utilidad Bruta],\n    [Ventas Brutas]\n)",
+          "format_string": null,
+          "display_folder": "Rentabilidad",
+          "description": null
+        }
+      },
+      "explanation": {
+        "business_name": "Proporción de utilidad sobre ventas",
+        "definition": "Proporción que representa Utilidad Bruta respecto de Ventas Brutas. Expresa cuánto resultado bruto calculado corresponde a cada unidad de importe vendido. Con componentes monetarios comparables, una razón de 0,25 se interpreta como un margen del 25%; este ejemplo explica la escala y no es un resultado del modelo.",
+        "validation_notes": [
+          "Confirmar que ambos componentes utilizan unidades comparables y presentar la medida como porcentaje."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/measure/Cantidad%20Operaciones": {
+      "source": {
+        "object_id": "table/FactVentas/measure/Cantidad%20Operaciones",
+        "object_type": "measure",
+        "name": "Cantidad Operaciones",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 46,
+        "metadata": {
+          "name": "Cantidad Operaciones",
+          "source_line": 46,
+          "source_path": "tables/FactVentas.tmdl",
+          "expression": "DISTINCTCOUNT(\n    FactVentas[IdVenta]\n)",
+          "format_string": "0",
+          "display_folder": "Indicadores",
+          "description": null
+        }
+      },
+      "explanation": {
+        "business_name": "Recuento de identificadores de venta",
+        "definition": "Cantidad de identificadores IdVenta distintos presentes en las ventas seleccionadas. Se utiliza como base para interpretar el número de operaciones y como denominador de Ticket Promedio. Los registros que comparten identificador contribuyen al mismo valor distinto, por lo que el indicador no equivale a contar filas.",
+        "validation_notes": [
+          "La equivalencia entre un identificador distinto y una operación de negocio debe confirmarse funcionalmente."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "table/FactVentas/measure/Ticket%20Promedio": {
+      "source": {
+        "object_id": "table/FactVentas/measure/Ticket%20Promedio",
+        "object_type": "measure",
+        "name": "Ticket Promedio",
+        "table_name": "FactVentas",
+        "source_path": "tables/FactVentas.tmdl",
+        "source_line": 55,
+        "metadata": {
+          "name": "Ticket Promedio",
+          "source_line": 55,
+          "source_path": "tables/FactVentas.tmdl",
+          "expression": "DIVIDE(\n    [Ventas Brutas],\n    [Cantidad Operaciones]\n)",
+          "format_string": null,
+          "display_folder": "Indicadores",
+          "description": null
+        }
+      },
+      "explanation": {
+        "business_name": "Importe medio por identificador de venta",
+        "definition": "Importe de Ventas Brutas por cada identificador de venta distinto contado por Cantidad Operaciones. Permite comparar el valor medio de los grupos de venta seleccionados entre períodos, productos o categorías. Su lectura como importe medio por operación depende de que IdVenta represente esa operación.",
+        "validation_notes": [
+          "Confirmar la granularidad y el significado de IdVenta antes de interpretarlo como ticket por venta completa."
+        ]
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "relationship/AutoDetected_993b499f-1962-4d3f-a0e9-03556b9de6c7": {
+      "source": {
+        "object_id": "relationship/AutoDetected_993b499f-1962-4d3f-a0e9-03556b9de6c7",
+        "object_type": "relationship",
+        "name": "AutoDetected_993b499f-1962-4d3f-a0e9-03556b9de6c7",
+        "table_name": null,
+        "source_path": "relationships.tmdl",
+        "source_line": 6,
+        "metadata": {
+          "name": "AutoDetected_993b499f-1962-4d3f-a0e9-03556b9de6c7",
+          "source_path": "relationships.tmdl",
+          "source_line": 6,
+          "from_column": {
+            "table": "FactVentas",
+            "column": "IdProducto"
+          },
+          "to_column": {
+            "table": "DimProducto",
+            "column": "IdProducto"
+          },
+          "properties": []
+        }
+      },
+      "explanation": {
+        "business_name": "Ventas por producto y categoría",
+        "definition": "Conecta el producto registrado en FactVentas con su descripción en DimProducto. Permite que las selecciones de producto o categoría filtren las ventas, sus costos y los indicadores derivados. La configuración efectiva aplica el filtro del catálogo hacia FactVentas.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    },
+    "relationship/29e4aa9d-3435-a4d9-ddd4-d5e51b79fd3d": {
+      "source": {
+        "object_id": "relationship/29e4aa9d-3435-a4d9-ddd4-d5e51b79fd3d",
+        "object_type": "relationship",
+        "name": "29e4aa9d-3435-a4d9-ddd4-d5e51b79fd3d",
+        "table_name": null,
+        "source_path": "relationships.tmdl",
+        "source_line": 10,
+        "metadata": {
+          "name": "29e4aa9d-3435-a4d9-ddd4-d5e51b79fd3d",
+          "source_path": "relationships.tmdl",
+          "source_line": 10,
+          "from_column": {
+            "table": "FactVentas",
+            "column": "Fecha"
+          },
+          "to_column": {
+            "table": "DimFecha",
+            "column": "Fecha"
+          },
+          "properties": []
+        }
+      },
+      "explanation": {
+        "business_name": "Ventas por fecha de calendario",
+        "definition": "Conecta la fecha registrada en FactVentas con la fecha de DimFecha. Permite que los filtros del calendario, incluidos Año y Mes, delimiten las ventas consideradas por las medidas. La configuración efectiva aplica el filtro de DimFecha hacia FactVentas.",
+        "validation_notes": []
+      },
+      "definition_provenance": {
+        "generated_with_ai": true,
+        "provider": "Codex",
+        "review": "Revisión técnica contextual; no aprobación del responsable de negocio"
+      }
+    }
+  },
+  "fingerprint_normalization": "LF line endings; object metadata verified unchanged"
+}

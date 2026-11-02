@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "semantic-intelligence"
-version = "1.0.0"
+version = "2.0.0"
 description = "Documentacion, analisis y auditoria de modelos semanticos de Power BI."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,6 +18,16 @@ classifiers = [
 dependencies = ["Jinja2>=3.1.6,<4"]
 
 [project.optional-dependencies]
+local-ai = [
+  "httpx>=0.28,<1",
+  "pydantic>=2.9,<3",
+  "python-dotenv>=1,<2",
+]
+ai = [
+  "openai>=2,<3",
+  "pydantic>=2.9,<3",
+  "python-dotenv>=1,<2",
+]
 dev = [
   "pytest>=8.0",
 ]
@@ -26,7 +36,7 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-semantic_intelligence = ["templates/*.j2"]
+semantic_intelligence = ["templates/*.j2", "resources/*.json", "resources/*.ps1"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

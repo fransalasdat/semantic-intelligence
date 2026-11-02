@@ -18,7 +18,7 @@ def test_demo_documents_every_column_and_relationship():
     for table in inventory.tables:
         section = columns.split(f"### Columnas de tabla: {table.name}\n", 1)[1].split("### Columnas de tabla:", 1)[0]
         for column in table.columns:
-            assert f"| {column.name} | {column.data_type} |" in section
+            assert f"| {column.name} | <code>{column.data_type}</code> |" in section
             assert f"| {column.source_line} |" in section
     assert markdown.count("### Relación:") == 2
     relations = markdown.split("## Relaciones\n", 1)[1]
@@ -27,8 +27,8 @@ def test_demo_documents_every_column_and_relationship():
     assert "| Tabla de destino | DimFecha |" in relations
     assert "| Columna de destino | IdProducto |" in relations
     assert "| Columna de destino | Fecha |" in relations
-    assert "| Cardinalidad de origen | No especificado en TMDL |" in relations
-    assert "| Activa | No especificado en TMDL |" in relations
+    assert "| Cardinalidad de origen | Muchos (<code>many</code>) | Predeterminado verificado" in relations
+    assert "| Activa | Sí (<code>true</code>) | Predeterminado verificado" in relations
 
 
 def test_column_descriptions_calculated_dax_and_relationship_properties_from_tmdl(tmp_path):
@@ -54,13 +54,15 @@ def test_column_descriptions_calculated_dax_and_relationship_properties_from_tmd
         "\tsecurityFilteringBehavior: oneDirection\n", encoding="utf-8"
     )
     markdown = render_markdown(build_inventory(discover_model(tmp_path)))
-    assert "| ProductId | int64 | Sí | ProductKey | none | Identificador del producto\\." in markdown
+    assert "| ProductId (oculta) | <code>int64</code> |" in markdown
+    assert "Identificador del producto\\." in markdown
+    assert "**Columna de origen:** <code>ProductKey</code>" in markdown
     assert "#### Expresión de columna: Calculated" in markdown
     assert "```dax\nIF(TRUE(), 1, 0)\n```" in markdown
-    assert "| Cardinalidad de origen | many |" in markdown
-    assert "| Cardinalidad de destino | one |" in markdown
-    assert "| Dirección de filtro | bothDirections |" in markdown
-    assert "| Activa | false |" in markdown
+    assert "| Cardinalidad de origen | Muchos (<code>many</code>) | Hecho extraído" in markdown
+    assert "| Cardinalidad de destino | Uno (<code>one</code>) | Hecho extraído" in markdown
+    assert "| Dirección de filtro | Ambas direcciones (<code>bothDirections</code>) | Hecho extraído" in markdown
+    assert "| Activa | No (<code>false</code>) | Hecho extraído" in markdown
     assert "| securityFilteringBehavior | oneDirection |" in markdown
     assert "relationships\\.tmdl, línea 1" in markdown
 
@@ -69,7 +71,7 @@ def test_missing_column_metadata_empty_tables_and_no_relationships():
     column = ParsedColumn("Id", 2, Path("tables/Empty.tmdl"))
     table = ParsedTable("Empty", Path("tables/Empty.tmdl"), 1, (column,), ())
     markdown = render_markdown(ModelInventory("Example", (table,), ()))
-    assert "| Id | No especificado | No | No especificada | No especificada | Sin descripción en el modelo\\. | 2 |" in markdown
+    assert "| Id | <code>No especificado</code> | <code>No especificado</code> | <code>No especificada</code> | 2 |" in markdown
     assert "No hay relaciones en el inventario." in markdown
     empty = render_markdown(ModelInventory("Example", (replace(table, columns=()),), ()))
     assert "No hay columnas en esta tabla." in empty
@@ -89,8 +91,8 @@ def test_column_and_relationship_values_cannot_break_markdown_tables():
     )
     markdown = render_markdown(ModelInventory("Example", (table,), (relationship,)))
     row = next(line for line in markdown.splitlines() if line.startswith("| Id&#124;"))
-    assert row.count("|") == 8
-    assert "Primera línea<br>Segunda &#124; &lt;img&gt;" in row
+    assert row.count("|") == 6
+    assert "Primera línea<br>Segunda &#124; &lt;img&gt;" in markdown
     assert "| Tabla de origen | Sales&#124;&lt;one&gt; |" in markdown
     assert "| custom&#124;property | a&#124;b<br>&lt;img&gt; |" in markdown
     assert '````dax\n"```"\n````' in markdown

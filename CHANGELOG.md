@@ -1,24 +1,58 @@
 # Historial de cambios
 
-## Sin publicar
+## 2.0.0 — 2026-11-02
 
-Trabajo en `feat/hierarchies-basic-audit`, posterior a 1.0.0:
+Documentación técnica y funcional del modelo semántico, con definiciones
+contextuales propuestas por IA, revisión estática y procedencia explícita.
 
-- Corrige la extracción de medidas y columnas con expresiones delimitadas por
-  tres backticks: no exporta los delimitadores y conserva espacios y saltos de
-  línea relativos al margen de cierre. Informa bloques sin cierre.
-- Agrega jerarquías y niveles con columna referenciada, orden, descripción,
-  visibilidad y archivo y línea de origen; valida duplicados y referencias.
-- Documenta jerarquías en Markdown e incorpora hallazgos determinísticos para
-  descripciones faltantes, relaciones inactivas y filtros bidireccionales.
-- Amplía el JSON al esquema `0.3`: tablas con `hierarchies` y colección raíz
-  `audit_findings`, sin cambiar los campos anteriores.
-- Agrega regresiones sintéticas del escenario AdventureWorks y validación local
-  adicional, sin incorporar sus datos o archivos al repositorio.
+### Documentación y navegación
 
-Son funcionalidades adicionales al arreglo del DAX. Al publicar, corresponde
-evaluar una versión menor (por ejemplo 1.1.0), en vez de agruparlas como un mero
-parche 1.0.1. No se cambia todavía el número de versión del paquete ni se publica.
+- Definiciones del modelo, tablas, columnas, medidas, jerarquías, niveles y
+  relaciones, con nombres amigables y dudas específicas.
+- Diccionario técnico de cinco columnas y fichas que conservan las explicaciones.
+- Registro compartido `VAL-*` con enlaces en ambos sentidos y preguntas de
+  granularidad específicas por tabla.
+- Relaciones con extremos legibles, etiquetas junto a códigos y conexiones
+  visibles en visores que no interpretan Mermaid.
+- Referencias DAX por función; fecha del documento y del contenido IA separadas,
+  proveedor/modelo registrado, prompt, esquema y desglose de cobertura.
+- Ejemplo versionado de 24 definiciones, redactado y revisado por Codex, con su
+  informe reproducible y sus límites de aprobación funcional.
+
+### Extracción y análisis
+
+- DAX delimitado por backticks, con conservación de espacios y saltos de línea.
+- Jerarquías y niveles con validación de nombres, orden y columnas referenciadas.
+- Formatos de columna, particiones clasificadas, huella TMDL y origen M/#table
+  sin exportar los literales de las consultas.
+- Predeterminados de relaciones verificados en TOM 19.118.3, con evidencia
+  capturada, hash y script reproducible en un apéndice autocontenido.
+- Análisis estático acotado de DIVIDE, DISTINCTCOUNT, SUMX de producto y resta
+  de medidas: dependencias directas, BLANK/cero y comportamiento del total.
+- Cinco reglas de revisión: REL001, REL002, COL001, COL002 y FMT001; cobertura
+  de documentación original y validaciones no realizadas por separado.
+
+### IA opcional
+
+- Ollama local como proveedor predeterminado; OpenAI opcional para una medida.
+- `--explain-all` con lotes, caché validada y reanudación; contrato
+  `business-definitions-4` con definición contextual, nombre y notas.
+- `--ai-report` para regenerar documentos desde informes guardados.
+- Propuestas IA marcadas y originales conservados; normalización de algunas
+  afirmaciones sin respaldo y rechazo de definiciones inutilizables. Estos
+  controles no garantizan la corrección de toda la interpretación de negocio.
+- Configuración con `.env` y extras opcionales; exportación habitual sin IA.
+- Transporte Ollama loopback sin proxies/credenciales y rechazo de modelos remotos;
+  mensajes diferenciados de configuración, acceso y cuota.
+
+### Compatibilidad y validación
+
+- Aplicación `2.0.0`, inventario JSON `0.4` (frente a `0.2` en 1.0.0).
+  Los consumidores de JSON y de la estructura Markdown deben revisar la migración.
+- Reintentos acotados ante bloqueos transitorios de archivos en Windows.
+- Huella de definición independiente de los saltos de línea del checkout.
+- 188 pruebas automatizadas y revisión HTML a 1280/768 píxeles.
+- Notas, instalación, comandos y límites en [docs/VERSION_2.md](docs/VERSION_2.md).
 
 ## 1.0.0 — 2026-11-01
 

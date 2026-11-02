@@ -1,0 +1,45 @@
+{
+  "assembly_version": "19.118.3.0",
+  "constructor": {
+    "fromCardinality": "Many",
+    "toCardinality": "One",
+    "crossFilteringBehavior": "OneDirection",
+    "isActive": true
+  },
+  "relationships": [
+    {
+      "name": "524365f0-c4ee-4b9b-9c49-55ffd32c969a",
+      "settings": {
+        "fromCardinality": "Many",
+        "toCardinality": "One",
+        "crossFilteringBehavior": "OneDirection",
+        "isActive": true
+      }
+    },
+    {
+      "name": "AutoDetected_993b499f-1962-4d3f-a0e9-03556b9de6c7",
+      "settings": {
+        "fromCardinality": "Many",
+        "toCardinality": "One",
+        "crossFilteringBehavior": "OneDirection",
+        "isActive": true
+      }
+    },
+    {
+      "name": "29e4aa9d-3435-a4d9-ddd4-d5e51b79fd3d",
+      "settings": {
+        "fromCardinality": "Many",
+        "toCardinality": "One",
+        "crossFilteringBehavior": "OneDirection",
+        "isActive": true
+      }
+    }
+  ],
+  "verified_at": "2026-11-02T21:41:56.744980+00:00",
+  "package": "Microsoft.AnalysisServices",
+  "package_version": "19.118.3",
+  "package_sha256": "21d3a2e4419ada03672f69fc7bdc986d3c6e050de2bb8f509f55a28f2bb1cb6b",
+  "reference_model": "examples/demo_sales",
+  "definition_sha256": "0e8650158ed63ee00aec2352961f165996b32d832c753062ed17e87323a4bb24",
+  "definition_hash_format": "SHA-256 of relative paths and UTF-8 TMDL text normalized to LF, separated by NUL"
+}

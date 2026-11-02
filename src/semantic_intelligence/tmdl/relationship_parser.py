@@ -40,7 +40,7 @@ class ParsedRelationship:
             (
                 value
                 for property_name, value in self.properties
-                if property_name == name
+                if property_name.casefold() == name.casefold()
             ),
             None,
         )

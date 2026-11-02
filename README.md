@@ -1,30 +1,31 @@
 # Semantic Intelligence
 
-**Versión 1.0.0 — Inventario y documentación local de modelos semánticos de Power BI.**
+**Versión 2.0.0 — Documentación técnica y funcional de modelos semánticos de Power BI, con IA opcional.**
 
-> Rama de desarrollo posterior a 1.0.0: incorpora bloques DAX delimitados,
-> jerarquías y auditoría básica. Estos cambios todavía no constituyen una nueva
-> release; la versión declarada del paquete se actualizará al preparar esa entrega.
-> Ver [cambios en desarrollo](docs/DEVELOPMENT.md) e [historial](CHANGELOG.md).
+Ver [notas de la versión 2.0.0](docs/VERSION_2.md), [ejemplo completo](docs/examples/demo_sales.md)
+e [historial de cambios](CHANGELOG.md).
 
 Semantic Intelligence es un proyecto en Python que transforma los metadatos de proyectos Power BI en información técnica verificable. Lee definiciones TMDL de un proyecto PBIP y genera un inventario JSON y documentación Markdown, con referencias al archivo y línea de origen, sin modificar el proyecto analizado.
 
-En etapas posteriores incorporará explicaciones asistidas por modelos de lenguaje y análisis de impacto entre versiones. La IA será una capa opcional: los resultados determinísticos deberán poder generarse sin enviar información a servicios externos.
+La IA es una capa opcional para proponer documentación. El inventario y la auditoría funcionan de forma independiente. El análisis de impacto entre versiones continúa en el roadmap.
 
 ## Estado del proyecto
 
-La versión 1.0.0 entrega el MVP de extracción y documentación por línea de comandos. Permite:
+La versión 2.0.0 amplía el inventario inicial con documentación explicativa y revisión técnica. Permite:
 
 - localizar y leer los archivos TMDL de un proyecto PBIP;
-- inventariar tablas, columnas, medidas y relaciones;
+- inventariar tablas, columnas, medidas, jerarquías, relaciones y particiones del subconjunto soportado;
 - reunir los metadatos en un inventario JSON versionado;
-- generar documentación técnica en Markdown;
+- generar documentación técnica y funcional en Markdown, con definiciones propuestas por IA;
+- explicar patrones DAX reconocidos y resolver predeterminados de relaciones verificados;
+- agrupar validaciones funcionales en `VAL-*` y separar auditoría de cobertura de documentación;
 - validar los resultados con pruebas automatizadas y un modelo de referencia.
 
 El alcance de esta versión es el subconjunto de TMDL implementado y probado;
-no implica compatibilidad con todos los modelos de Power BI. Las dependencias
-DAX, auditoría, comparación de versiones, interfaz e IA pertenecen al roadmap.
-Ver [notas de versión](CHANGELOG.md) y [alcance y límites de 1.0.0](docs/VERSION_1.md).
+no implica compatibilidad con todos los modelos de Power BI. El grafo completo de
+dependencias, la comparación de versiones y la interfaz continúan en el roadmap.
+Ver [alcance y límites de 2.0.0](docs/VERSION_2.md). La documentación de
+[1.0.0](docs/VERSION_1.md) se conserva como referencia histórica.
 
 ## Visión funcional
 
@@ -43,7 +44,7 @@ La separación entre extracción, análisis y presentación busca que cada resul
 
 La definición inicial, las decisiones de alcance y el roadmap están documentados en [docs/PROJECT_SCOPE.md](docs/PROJECT_SCOPE.md).
 
-La versión 1.0.0 no modifica modelos Power BI, no procesa archivos PBIX binarios y no requiere conexión a Power BI Service. El tratamiento es local y de solo lectura.
+La versión 2.0.0 analiza proyectos PBIP/TMDL de solo lectura. La entrada PBIX debe convertirse previamente a PBIP/TMDL; no se requiere conexión a Power BI Service.
 
 ## Estructura del proyecto
 
@@ -51,7 +52,10 @@ La versión 1.0.0 no modifica modelos Power BI, no procesa archivos PBIX binario
 semantic-intelligence/
 ├── docs/
 │   ├── PROJECT_SCOPE.md
-│   └── VERSION_1.md
+│   ├── VERSION_1.md
+│   ├── VERSION_2.md
+│   ├── AI.md
+│   └── examples/
 ├── examples/
 │   └── demo_sales/
 │       ├── demo_sales.pbip
@@ -63,7 +67,11 @@ semantic-intelligence/
 │       ├── discovery.py      # Descubrimiento del modelo
 │       ├── inventory.py      # Validación y JSON
 │       ├── documentation.py  # Generación Markdown
+│       ├── documentation_review.py # Registro VAL-* y navegación
+│       ├── ai_batch.py       # Definiciones IA por lotes
+│       ├── measure_analysis.py # Análisis DAX acotado
 │       ├── output.py         # Escritura de resultados
+│       ├── resources/        # Evidencia y procedimiento TOM
 │       ├── tmdl/             # Lectores de metadatos
 │       └── templates/        # Plantilla Jinja2
 ├── tests/
@@ -112,10 +120,10 @@ No se requieren `uv`, archivo `.env` ni claves de API.
 Sin opciones de exportación, el comando solo muestra los archivos TMDL descubiertos.
 Con `--output`, integra los lectores actuales de tablas, columnas, medidas y
 relaciones, valida nombres duplicados y referencias de relaciones, y exporta
-un JSON UTF-8 con versión de esquema `0.3` en esta rama (`0.2` en 1.0.0). La carpeta de salida se crea si falta
+un JSON UTF-8 con versión de esquema `0.4` (`0.2` en la aplicación 1.0.0). La carpeta de salida se crea si falta
 y debe estar fuera del proyecto Power BI analizado para proteger la entrada.
 
-La versión de la aplicación y la del formato JSON (`schema_version: "0.3"` en desarrollo)
+La versión de la aplicación (`2.0.0`) y la del formato JSON (`schema_version: "0.4"`)
 son independientes. El esquema JSON sigue en evolución; las clases Python internas
 no se presentan como una API pública estable.
 
@@ -153,7 +161,8 @@ evitando ocultar referencias inválidas mediante la exclusión.
 
 Este primer contrato exporta los
 metadatos soportados por los lectores actuales; todavía no representa toda la
-sintaxis TMDL ni particiones. Esta rama agrega las jerarquías y sus niveles,
+sintaxis TMDL. La versión 2.0.0 incluye particiones clasificadas, formatos de columna,
+huella de definición, predeterminados de relaciones verificados y jerarquías con sus niveles,
 incluyendo orden, columnas referenciadas y origen; valida columnas inexistentes
 y nombres u ordinales duplicados.
 
@@ -185,8 +194,10 @@ carácter privado y archivo y línea de origen de cada tabla. También informa
 las tablas automáticas excluidas y contiene un catálogo de medidas por tabla:
 descripción, expresión DAX, carpeta, formato y archivo y línea de origen.
 
-El diccionario de columnas muestra nombre, tipo de dato, visibilidad, columna
-de origen, agregación, descripción y línea de origen por tabla. Las expresiones
+El diccionario contiene una tabla técnica de cinco columnas y fichas con las
+definiciones y los enlaces a pendientes relevantes. Las propiedades adicionales
+permanecen en JSON; los campos físicos con otro nombre se indican en la ficha.
+Las expresiones
 de columnas calculadas se muestran en bloques DAX separados para conservar sus
 saltos de línea.
 
@@ -198,9 +209,18 @@ sin los delimitadores, conservando el contenido relativo al margen de cierre.
 La sección de relaciones muestra los extremos (tabla y columna de origen y
 destino), las cardinalidades, la dirección de filtro, el estado activo y las
 otras propiedades explícitas extraídas, junto con el archivo y línea de origen.
-Si una propiedad no está escrita en el TMDL, se muestra «No especificado en TMDL»;
-todavía no se resuelven valores predeterminados del motor. Los extremos
-`fromColumn` y `toColumn` no se interpretan como dirección de propagación del filtro.
+Las omisiones de cardinalidad, filtro y estado activo se resuelven con reglas
+verificadas en Microsoft TOM 19.118.3, distinguiéndolas de las propiedades
+explícitas. La dirección de filtro se explica por relación y los títulos usan
+sus extremos; el GUID queda como identificador secundario. Ver la
+[comprobación reproducible de TOM](docs/TOM_DEFAULTS.md).
+
+El documento incluye índice, conexiones, tipos y formatos como código, origen
+de particiones y alcance de extracción. `import` y el origen M `#table` se
+documentan cuando están presentes. Seguridad y grupos de cálculo se indican
+como no analizados, sin afirmar su ausencia. La granularidad requiere validación
+funcional. Las medidas de los patrones soportados incluyen dependencias directas,
+tratamiento de BLANK/cero y totales, mediante análisis estático sin IA.
 
 El recorrido de los datos es:
 
@@ -221,7 +241,7 @@ seis medidas de DemoSales carecen de descripción en los archivos versionados.
 No se generan explicaciones de negocio automáticamente. Columnas, medidas y
 relaciones quedan documentadas tanto en JSON como en Markdown.
 
-## Auditoría básica en desarrollo
+## Auditoría básica
 
 La exportación ahora incluye `audit_findings` en JSON y una sección de revisión
 en Markdown. Se evalúa el inventario seleccionado, excluyendo las tablas
@@ -229,14 +249,85 @@ automáticas por defecto. No se modifica el modelo ni se ejecutan consultas DAX.
 
 | Regla | Severidad | Evidencia |
 |---|---|---|
-| DOC001 | info | Descripción ausente o vacía en tabla, columna, medida, jerarquía o nivel |
 | REL001 | info | Relación con `isActive: false` explícito |
 | REL002 | warning | Relación con `crossFilteringBehavior: bothDirections` explícito |
+| COL001 | info | `sum` y nombre de identificador o calendario; heurística |
+| COL002 | info | `sum` y nombre de importe unitario; heurística |
+| FMT001 | info | `%` en nombre y formato estático ausente; heurística |
+
+La cobertura de descripciones originales se mide por separado. La auditoría
+distingue puntos de revisión, reglas aplicadas y validaciones no realizadas.
 
 Cada hallazgo tiene un identificador de objeto, evidencia, archivo y línea,
 mensaje y acción sugerida. Son puntos para revisar con el responsable del modelo,
 no errores confirmados: una relación inactiva o bidireccional puede ser intencional.
 La ausencia de hallazgos tampoco garantiza la calidad completa del modelo.
+La ausencia de descripciones no genera hallazgos ni recomendaciones. Las
+descripciones existentes siguen siendo metadatos exportados; la descripción
+sugerida por IA pertenece a la explicación opcional de una medida seleccionada.
+
+## Explicaciones opcionales con IA
+
+Para documentar todos los objetos con Ollama local, con una descripción técnica
+integrada junto a cada columna y medida:
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --explain-all --ai-provider ollama --ai-output output/demo_sales_definitions_ai.json --markdown output/demo_sales_ai.md
+```
+
+También se incluyen tablas, jerarquías, niveles y relaciones del inventario.
+El progreso se guarda por lotes; repetir el mismo comando reutiliza los grupos
+completados si no cambiaron modelo, origen ni instrucciones. Puede tardar varios
+minutos. Las propuestas se identifican como IA y no sustituyen los metadatos
+originales. La IA redacta definiciones específicas: propósito del modelo,
+función de cada tabla, significado y uso de columnas e interpretación de medidas.
+Se marcan **Definición propuesta — Generado con IA**. Las dudas compartidas se
+agrupan una vez en `VAL-*`, con referencias desde los objetos afectados. Las
+preguntas de granularidad distinguen calendario, dimensión e identificadores
+contados. La procedencia registra proveedor, modelo cuando está disponible,
+fecha del contenido, prompt y esquema; la cobertura cuenta al propio modelo.
+Los controles de afirmaciones
+detectables no prueban todas las reglas de negocio. Se retiraron las frases
+genéricas basadas en categorías. La explicación técnica de fórmulas reconocidas
+se identifica como análisis estático sin IA.
+Los hallazgos de reglas indican que no usaron IA; un hallazgo
+asistido se identifica explícitamente. Ver [guía y reanudación de lotes](docs/AI.md).
+
+Para volver a generar Markdown con un informe guardado, sin inferencia nueva:
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --ai-report output/demo_sales_definitions_ai.json --markdown output/demo_sales_ai.md
+```
+
+Los informes anteriores sin definiciones completas conservan sus borradores en
+JSON; requieren regeneración con el contrato nuevo. Los informes de otra
+instantánea tampoco aportan definiciones al documento actual. La exportación
+sin IA documenta metadatos y fórmulas e indica qué definiciones faltan.
+
+La versión 2.0.0 incluye Ollama local (predeterminado) u
+OpenAI para explicar una medida por ejecución. Instalación local: `pip install -e ".[local-ai,dev]"`
+y Ollama con un modelo descargado. Para OpenAI: `pip install -e ".[ai,dev]"`.
+El extractor habitual funciona sin esta integración ni credenciales.
+
+Primero se puede guardar el contexto localmente sin una solicitud externa:
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --explain-measure FactVentas "Ventas Brutas" --ai-context output/ventas_brutas_context.json
+```
+
+Con Ollama abierto y el modelo descargado (`ollama pull qwen3:4b`), consultar localmente:
+
+```powershell
+.\.venv\Scripts\python.exe -m semantic_intelligence examples/demo_sales --explain-measure FactVentas "Ventas Brutas" --ai-provider ollama --ai-output output/ventas_brutas_ollama.json --markdown output/ventas_brutas_ollama.md
+```
+
+El modo local no necesita clave ni créditos de API. `AI_PROVIDER=ollama` y
+`OLLAMA_MODEL=qwen3:4b` permiten configurarlo en `.env`; las opciones de CLI
+tienen prioridad. La alternativa OpenAI se activa con `--ai-provider openai`.
+El contexto contiene metadatos, fórmulas y relaciones seleccionadas; no incluye
+filas ni particiones. El JSON de IA conserva modelo, prompt, contexto, evidencia,
+consumo y estado pendiente de revisión. La descripción original permanece intacta.
+Ver [configuración de la clave, arquitectura y evaluación](docs/AI.md).
 
 ## Modelo de demostración
 
@@ -252,13 +343,12 @@ El proyecto portátil de Power BI disponible en [`examples/demo_sales`](examples
 
 ## Roadmap resumido
 
-1. Entregado en 1.0.0: extracción del subconjunto soportado y documentación JSON/Markdown.
-2. En esta rama: jerarquías y primeras reglas de auditoría, con validación adicional en AdventureWorks. Dependencias DAX aún pendientes.
-3. Explicaciones asistidas por IA.
-4. Comparación de versiones y análisis de impacto.
-5. Interfaz web local y demostración pública.
+1. Disponible en 2.0.0: inventario, documentación explicativa, jerarquías, particiones clasificadas, auditoría y definiciones con IA opcional.
+2. Ampliar dependencias DAX, linaje M y capacidades de seguridad analizadas.
+3. Comparación de versiones y análisis de impacto.
+4. Interfaz web local y demostración pública.
 
 ## Licencia y contribuciones
 
-La licencia y la guía de contribución siguen pendientes de definición. La
-preparación local de la versión 1.0.0 no publica una release, un tag ni un paquete.
+La licencia y la guía de contribución siguen pendientes de definición.
+La versión 2.0.0 se identifica en Git mediante `v2.0.0`; no se publica un paquete en PyPI como parte de esta entrega.

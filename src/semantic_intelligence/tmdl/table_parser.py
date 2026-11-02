@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import dedent
+from semantic_intelligence.tmdl.partition_parser import ParsedPartition, parse_partitions
 
 from semantic_intelligence.tmdl.reader import (
     TmdlDocument,
@@ -28,6 +29,7 @@ class ParsedColumn:
     summarize_by: str | None = None
     expression: str | None = None
     description: str | None = None
+    format_string: str | None = None
 
 
 @dataclass(frozen=True)
@@ -79,6 +81,7 @@ class ParsedTable:
     description: str | None = None
     is_auto_date_table: bool = False
     hierarchies: tuple[ParsedHierarchy, ...] = ()
+    partitions: tuple[ParsedPartition, ...] = ()
 
 
 @dataclass
@@ -331,6 +334,7 @@ def _finish_object(
                 ),
                 expression=expression,
                 description=builder.description,
+                format_string=_property(builder.properties, "formatString"),
             )
         )
         return
@@ -528,6 +532,7 @@ def parse_table_document(document: TmdlDocument) -> ParsedTable:
         is_private=_boolean_property(table_properties, "isPrivate"),
         description=table_description,
         hierarchies=tuple(hierarchies),
+        partitions=parse_partitions(document.content, document.relative_path),
         is_auto_date_table=any(
             (table_annotations.get(name) or "").casefold() == "true"
             for name in ("__PBI_LocalDateTable", "__PBI_TemplateDateTable")

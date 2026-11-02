@@ -1,4 +1,51 @@
 # Modelo: {{ model.name | markdown_text }}
+{% macro checks(references) %}
+{% if references %}
+**Validaciones:** {% for issue in references %}[{{ issue.identifier }}](#{{ issue.target }}){{ ', ' if not loop.last else '.' }}{% endfor %}
+
+{% endif %}
+{% endmacro %}
+{% macro describe(value, references=[]) %}
+**Definición propuesta — Generado con IA**{{ (' · ' ~ value.business_name) | markdown_text if value.business_name else '' }}
+
+{{ value.text | markdown_text }}
+{{ checks(references) }}
+{% endmacro %}
+
+<a id="{{ object_anchor('model', none, model.name) }}"></a>
+
+## Descripción general
+
+{% set overview = ai_definition('model', none, model.name) %}
+{% if overview %}
+{{ describe(overview, validation_refs('model', none, model.name)) }}
+{% else %}
+El modelo reúne {{ model.tables | length }} tablas y {{ measure_count }} medidas. Las tablas incluidas son {{ model.tables | map(attribute='name') | join(', ') | markdown_text }}.
+El propósito de negocio requiere una descripción del autor o generar definiciones con IA mediante <code>--explain-all</code>.
+{% endif %}
+
+**Responsable del modelo:** no informado en los metadatos extraídos.
+
+**Fecha de generación:** {{ generation_date }} (UTC). **Versión del generador:** {{ generator_version }}; esquema {{ model.schema_version }}.
+
+**Versión del modelo (SHA-256 de la definición TMDL):** {{ (model.definition_sha256 or 'No disponible en este inventario') | inline_code }}.
+Identifica la definición, no la versión ni la actualización de los datos.
+
+## Índice
+
+- [Resumen y procedencia](#resumen)
+- [Tablas](#tablas)
+- [Origen, granularidad y alcance](#origen)
+- [Diccionario de columnas](#columnas)
+- [Jerarquías](#jerarquias)
+- [Catálogo de medidas](#medidas)
+- [Relaciones y conexiones](#relaciones)
+- [Seguridad y permisos](#seguridad)
+- [Validaciones funcionales](#validaciones)
+- [Auditoría y cobertura](#auditoria)
+- [Apéndice: comprobación TOM](#tom-verification)
+
+<a id="resumen"></a>
 
 ## Resumen
 
@@ -9,25 +56,59 @@
 | Medidas | {{ measure_count }} |
 | Relaciones | {{ model.relationships | length }} |
 | Jerarquías | {{ hierarchy_count }} |
-| Hallazgos de revisión | {{ audit_findings | length }} |
+| Puntos de revisión (no errores confirmados) | {{ audit_findings | length }} |
+
+## Procedencia del contenido
+
+Las propiedades, fórmulas y descripciones originales se extraen de TMDL. Las definiciones de IA explican su significado y uso como propuestas de interpretación, sujetas a revisión funcional.
+El comportamiento técnico identificado como análisis estático se obtiene de las fórmulas reconocidas y de reglas documentadas. Los datos y resultados no se ejecutaron.
+{% if ai_object_count %}
+
+| Procedencia de IA | Registro |
+|---|---|
+| Proveedor | {{ ai_provenance.provider | markdown_text }} |
+| Identificador del modelo | {{ (ai_provenance.model_id or 'No disponible: la ejecución no lo registró') | inline_code }} |
+| Fecha de generación del contenido IA | {{ (ai_provenance.generated_at or 'No registrada en el informe') | inline_code }} |
+| Versión del prompt | {{ ai_provenance.prompt_version | inline_code }} |
+| Esquema de respuesta | {{ ai_provenance.response_schema | inline_code }} |
+
+Definiciones publicadas: {{ published_ai_count }} de {{ ai_object_count }} objetos con respuesta IA{% if ai_batch %} ({{ ai_batch.total_objects }} solicitados){% endif %}.
+Desglose de definiciones publicadas: {% for label, count in ai_breakdown if count %}{{ count }} {{ label }}{{ ' + ' if not loop.last else '.' }}{% endfor %}
+
+El propio modelo es un objeto adicional a sus tablas, columnas, medidas, relaciones, jerarquías y niveles.
+**Generado con IA** identifica las definiciones asistidas. Las incertidumbres compartidas se agrupan en el registro de validaciones; cada objeto enlaza sus pendientes.
+Los controles de formato y afirmaciones detectables no garantizan la validez de todas las interpretaciones de negocio.
+{% if not ai_source_current %}
+El informe IA corresponde a otra instantánea del inventario; sus interpretaciones no se publican.
+{% endif %}
+
+{% if ai_object_count and published_ai_count == 0 and ai_source_current %}
+El informe guardado no contiene definiciones completas publicables. Generarlas con <code>--explain-all</code> permite completar el diccionario; no se sustituyen por etiquetas genéricas.
+{% endif %}
+{% elif not ai_finding_count %}
+Este documento no contiene contenido generado con IA.
+{% endif %}
+{% if ai_finding_count %}
+Hallazgos generados con IA: {{ ai_finding_count }}. Son propuestas, no hechos confirmados.
+{% endif %}
+
+<a id="tablas"></a>
 
 ## Tablas
 
-{% if model.tables %}
-| Tabla | Columnas | Medidas | Oculta | Privada | Archivo de origen | Línea |
+| Tabla | Columnas | Medidas | Oculta | Privada | Archivo TMDL | Línea |
 |---|---:|---:|---|---|---|---:|
 {% for table in model.tables %}
 | {{ table.name | markdown_text }} | {{ table.columns | length }} | {{ table.measures | length }} | {{ 'Sí' if table.is_hidden else 'No' }} | {{ 'Sí' if table.is_private else 'No' }} | {{ table.source_path.as_posix() | markdown_text }} | {{ table.source_line }} |
-{% endfor %}
 {% else %}
 No hay tablas en el inventario.
-{% endif %}
+{% endfor %}
 
-Las rutas de origen son relativas a la carpeta definition/ del modelo.
+Las rutas TMDL son relativas a definition/; identifican el metadato, no el origen de los datos.
 {% if model.auto_date_tables_included %}
 Se incluyen las tablas automáticas de fechas de Power BI y sus relaciones.
 {% else %}
-Se excluyen del inventario las tablas automáticas de fechas identificadas por anotaciones de Power BI y sus relaciones.
+Se excluyen las tablas automáticas de fechas identificadas por anotaciones de Power BI y sus relaciones.
 {% endif %}
 {% if model.excluded_auto_date_tables %}
 
@@ -38,27 +119,102 @@ Tablas automáticas excluidas ({{ model.excluded_auto_date_tables | length }}):
 {% endfor %}
 {% endif %}
 
+{% for table in model.tables %}
+<a id="{{ object_anchor('table', table.name, table.name) }}"></a>
+
+### Tabla: {{ table.name | markdown_text }}
+
+{% if table.description %}
+**Definición original del modelo:** {{ table.description | markdown_text }}
+{% endif %}
+{% set definition = ai_definition('table', table.name, table.name) %}
+{% if definition %}
+{{ describe(definition, validation_refs('table', table.name, table.name)) }}
+{% elif not table.description %}
+Definición de negocio no disponible. Esta tabla contiene {{ table.columns | map(attribute='name') | join(', ') | markdown_text }}.
+{{ checks(validation_refs('table', table.name, table.name)) }}
+{% endif %}
+
+{% endfor %}
+
+<a id="origen"></a>
+
+## Origen, granularidad y alcance
+
+{% for table in model.tables %}
+### {{ table.name | markdown_text }}
+
+{% if table.partitions %}
+**Hechos extraídos — particiones:**
+
+| Partición | Modo explícito | Tipo de origen | Origen de datos identificado | Línea TMDL |
+|---|---|---|---|---:|
+{% for partition in table.partitions %}
+| {{ partition.name | markdown_text }} | {{ (partition.mode or 'No especificado; efectivo no resuelto') | inline_code }} | {{ partition.source_type | inline_code }} | {% if partition.origin == 'embedded_table' %}Tabla embebida mediante <code>#table</code> en expresión M; los datos se definen en el modelo{% elif partition.origin == 'm_expression' %}Expresión M; origen completo pendiente de resolución{% elif partition.origin == 'calculated' %}Tabla calculada por expresión; resultados no evaluados{% else %}Origen no analizado por el extractor{% endif %}{% if partition.functions %}; funciones detectadas: {{ partition.functions | join(', ') | inline_code }}{% endif %} | {{ partition.source_line }} |
+{% endfor %}
+{% else %}
+**Particiones:** no se encontraron declaraciones en el archivo de tabla analizado.
+{% endif %}
+
+{% endfor %}
+| Capacidad | Estado | Alcance |
+|---|---|---|
+| Tablas, columnas, medidas, jerarquías, relaciones | Analizado | Inventario de objetos soportados; tablas de fechas según selección |
+| Particiones | {% if model.tables | selectattr('partitions') | list %}Analizado parcialmente{% else %}No presente en las declaraciones examinadas{% endif %} | Nombre, tipo, modo explícito, clasificación de origen y huella de expresión; sin modos efectivos |
+| Expresiones M de particiones | {{ 'Analizado parcialmente' if m_partition_count else 'No presente en las particiones examinadas' }} | Clasificación de #table directo y funciones; sin ejecución, linaje completo ni valores de filas. Expresiones compartidas: no analizadas |
+| Comportamiento DAX | Analizado parcialmente | DIVIDE de medidas, DISTINCTCOUNT de columna, SUMX de producto de dos columnas y resta de dos medidas; fuera de esos patrones se indica limitación |
+| Seguridad RLS/OLS | No analizado | No se afirma que no exista |
+| Grupos de cálculo y formatos dinámicos | No analizado | No se afirma que no existan; pueden alterar medidas y totales |
+| Datos, unicidad, integridad y granularidad funcional | No analizado | Requieren datos y validación de negocio |
+| Refresco, credenciales, resultados DAX y visuales | No analizado | No se conectó al motor ni se ejecutaron consultas |
+
+<a id="columnas"></a>
+
 ## Diccionario de columnas
+
+Las tablas contienen las propiedades técnicas principales. Las fichas siguientes conservan las definiciones y enlazan los pendientes; el resto de propiedades extraídas permanece en el inventario JSON.
 
 {% for table in model.tables %}
 ### Columnas de tabla: {{ table.name | markdown_text }}
 
-**Archivo de origen:** {{ table.source_path.as_posix() | markdown_text }}.
+**Archivo TMDL:** {{ table.source_path.as_posix() | markdown_text }}.
 
 {% if table.columns %}
-| Columna | Tipo de dato | Oculta | Columna de origen | Agregación | Descripción | Línea |
-|---|---|---|---|---|---|---:|
+| Columna | Tipo de dato | Formato explícito | Agregación | Línea |
+|---|---|---|---|---:|
 {% for column in table.columns %}
-| {{ column.name | markdown_text }} | {{ (column.data_type if column.data_type is not none else 'No especificado') | markdown_text }} | {{ 'Sí' if column.is_hidden else 'No' }} | {{ (column.source_column if column.source_column is not none else 'No especificada') | markdown_text }} | {{ (column.summarize_by if column.summarize_by is not none else 'No especificada') | markdown_text }} | {{ (column.description if column.description is not none else 'Sin descripción en el modelo.') | markdown_text }} | {{ column.source_line }} |
+| {{ column.name | markdown_text }}{{ ' (oculta)' if column.is_hidden else '' }} | {{ (column.data_type or 'No especificado') | inline_code }} | {{ (column.format_string or 'No especificado') | inline_code }} | {{ (column.summarize_by or 'No especificada') | inline_code }} | {{ column.source_line }} |
 {% endfor %}
 {% else %}
 No hay columnas en esta tabla.
 {% endif %}
 
+{% for column in table.columns %}
+{% set definition = ai_definition('column', table.name, column.name) %}
+{% set refs = validation_refs('column', table.name, column.name) %}
+<a id="{{ object_anchor('column', table.name, column.name) }}"></a>
+
+{% if definition or column.description or refs or column.expression is not none %}
+#### Columna: {{ column.name | markdown_text }}
+
+{% if column.description %}
+**Definición original del modelo:** {{ column.description | markdown_text }}
+{% endif %}
+{% if definition %}
+{{ describe(definition, refs) }}
+{% else %}
+{{ checks(refs) }}
+{% endif %}
+{% if column.source_column and column.source_column != column.name %}
+**Columna de origen:** {{ column.source_column | inline_code }}.
+{% endif %}
+{% endif %}
+{% endfor %}
+
 {% for column in table.columns if column.expression is not none %}
 #### Expresión de columna: {{ column.name | markdown_text }}
 
-**Origen:** {{ column.source_path.as_posix() | markdown_text }}, línea {{ column.source_line }}.
+**Origen:** {{ column.source_path.as_posix() | markdown_text }}, línea {{ column.source_line }}. Comportamiento de columna calculada: pendiente de análisis.
 
 {{ column.expression | dax_block }}
 
@@ -67,24 +223,31 @@ No hay columnas en esta tabla.
 No hay columnas en el inventario.
 {% endfor %}
 
+<a id="jerarquias"></a>
+
 ## Jerarquías
 
 {% for table in model.tables if table.hierarchies %}
 ### Jerarquías de tabla: {{ table.name | markdown_text }}
 
 {% for hierarchy in table.hierarchies %}
+<a id="{{ object_anchor('hierarchy', table.name, hierarchy.name) }}"></a>
+
 #### Jerarquía: {{ hierarchy.name | markdown_text }}
 
-**Descripción:** {{ (hierarchy.description if hierarchy.description is not none else 'Sin descripción en el modelo.') | markdown_text }}
+**Descripción original:** {{ (hierarchy.description or 'Sin descripción en el modelo.') | markdown_text }}
 
-**Oculta:** {{ 'Sí' if hierarchy.is_hidden else 'No' }}.
+**Oculta:** {{ 'Sí' if hierarchy.is_hidden else 'No' }}. **Origen:** {{ hierarchy.source_path.as_posix() | markdown_text }}, línea {{ hierarchy.source_line }}.
+{% set definition = ai_definition('hierarchy', table.name, hierarchy.name) %}
+{% if definition %}
+{{ describe(definition, validation_refs('hierarchy', table.name, hierarchy.name)) }}
+{% endif %}
 
-**Origen:** {{ hierarchy.source_path.as_posix() | markdown_text }}, línea {{ hierarchy.source_line }}.
-
-| Orden (ordinal desde 0) | Nivel | Columna | Descripción | Línea |
+| Orden (ordinal desde 0) | Nivel | Columna | Descripción e interpretación | Línea |
 |---:|---|---|---|---:|
 {% for level in hierarchy.levels %}
-| {{ level.ordinal }} | {{ level.name | markdown_text }} | {{ level.column | markdown_text }} | {{ (level.description if level.description is not none else 'Sin descripción en el modelo.') | markdown_text }} | {{ level.source_line }} |
+{% set definition = ai_definition('level', table.name, level.name, hierarchy.name) %}
+| {{ level.ordinal }} | <a id="{{ object_anchor('level', table.name, level.name, hierarchy.name) }}"></a>{{ level.name | markdown_text }} | {{ level.column | markdown_text }} | {{ (level.description or '—') | markdown_text }}{% if definition %}<br>**IA · propuesta:** {{ definition.text | markdown_text }}{% endif %} | {{ level.source_line }} |
 {% endfor %}
 
 {% endfor %}
@@ -92,21 +255,57 @@ No hay columnas en el inventario.
 No hay jerarquías en el inventario.
 {% endfor %}
 
+<a id="medidas"></a>
+
 ## Catálogo de medidas
 
-Las descripciones se toman del modelo original. Si faltan, se indica explícitamente.
+Las propiedades son hechos extraídos; las explicaciones de comportamiento siguientes son análisis estático sin IA.
+Aplican a las fórmulas reconocidas, sin incorporar grupos de cálculo ni formatos dinámicos, que no se analizan.
 
 {% for table in model.tables if table.measures %}
 ### Tabla: {{ table.name | markdown_text }}
 
 {% for measure in table.measures %}
+<a id="{{ object_anchor('measure', table.name, measure.name) }}"></a>
+
 #### Medida: {{ measure.name | markdown_text }}
 
-**Descripción:** {{ (measure.description if measure.description is not none else 'Sin descripción en el modelo.') | markdown_text }}
+{% if measure.description %}
+**Definición original del modelo:** {{ measure.description | markdown_text }}
+{% endif %}
+{% set definition = ai_definition('measure', table.name, measure.name) %}
+{% if definition %}
+{{ describe(definition, validation_refs('measure', table.name, measure.name)) }}
+{% elif not measure.description %}
+La definición funcional requiere una descripción del autor o generar con <code>--explain-all</code>. El cálculo técnico se explica a continuación cuando el patrón es reconocido.
+{% endif %}
 
-**Carpeta:** {{ (measure.display_folder if measure.display_folder is not none else 'Sin carpeta') | markdown_text }}
+{% set analysis = measure_analysis(table.name, measure) %}
+{% if analysis.recognized %}
+**Comportamiento técnico — análisis estático (sin IA):**
 
-**Formato:** {{ (measure.format_string if measure.format_string is not none else 'No especificado') | markdown_text }}
+{% for fact in analysis.facts %}
+{{ fact | technical_fact | markdown_text }}
+
+{% endfor %}
+**Dependencias directas del patrón reconocido:** {{ analysis.dependencies | join(', ') | inline_code }}. No representa un grafo transitivo completo.
+{% endif %}
+{% if not definition %}
+{{ checks(validation_refs('measure', table.name, measure.name)) }}
+{% endif %}
+{% if not analysis.recognized %}
+
+**Alcance técnico:** comportamiento, dependencias y total no analizados por el subconjunto DAX implementado; la fórmula se conserva íntegra.
+{% endif %}
+{% if analysis.reference %}
+
+Referencia del comportamiento: [{{ reference_title(analysis.reference) }}]({{ function_reference(analysis.reference) }}){% if function_reference(analysis.reference) != analysis.reference %} · [Guía de ceros y BLANK]({{ analysis.reference }}){% endif %}.
+
+{% endif %}
+
+**Carpeta:** {{ (measure.display_folder or 'Sin carpeta') | markdown_text }}
+
+**Formato explícito:** {{ (measure.format_string or 'No especificado') | inline_code }}
 
 **Origen:** {{ measure.source_path.as_posix() | markdown_text }}, línea {{ measure.source_line }}.
 
@@ -121,49 +320,123 @@ Sin expresión DAX en el modelo.
 No hay medidas en el inventario.
 {% endfor %}
 
+<a id="relaciones"></a>
+
 ## Relaciones
 
-Origen y destino corresponden a fromColumn y toColumn del TMDL; no indican por sí solos la dirección de propagación del filtro.
-Las propiedades ausentes se muestran como «No especificado en TMDL»; no se resuelven sus valores predeterminados.
+La vista resumida identifica las columnas conectadas y el sentido del filtro. La cardinalidad, el estado y la procedencia se detallan por relación.
+
+Esta vista permanece legible al copiar o exportar a un visor sin Mermaid:
+
+| Conexión entre columnas | Filtro efectivo |
+|---|---|
+{% for relationship in model.relationships %}
+| {{ (relationship.from_column.table ~ '[' ~ relationship.from_column.column ~ '] ↔ ' ~ relationship.to_column.table ~ '[' ~ relationship.to_column.column ~ ']') | markdown_text }} | {{ filter_explanation(relationship) | markdown_text }} |
+{% endfor %}
+
+<details>
+<summary>Diagrama para visores compatibles con Mermaid</summary>
+
+{{ connections }}
+
+</details>
+
+Origen y destino corresponden a fromColumn y toColumn. Los predeterminados omitidos se resuelven con las reglas documentadas en el [apéndice de comprobación TOM](#tom-verification).
 
 {% for relationship in model.relationships %}
-### Relación: {{ relationship.name | markdown_text }}
+<a id="{{ object_anchor('relationship', none, relationship.name) }}"></a>
+
+### Relación: {{ (relationship.from_column.table ~ '[' ~ relationship.from_column.column ~ '] ↔ ' ~ relationship.to_column.table ~ '[' ~ relationship.to_column.column ~ ']') | markdown_text }}
+
+**Identificador:** {{ relationship.name | inline_code }}.
+
+{% set definition = ai_definition('relationship', none, relationship.name) %}
+{% if definition %}
+{{ describe(definition, validation_refs('relationship', none, relationship.name)) }}
+{% endif %}
 
 **Origen del metadato:** {{ relationship.source_path.as_posix() | markdown_text }}, línea {{ relationship.source_line }}.
 
-| Propiedad | Valor |
-|---|---|
-| Tabla de origen | {{ relationship.from_column.table | markdown_text }} |
-| Columna de origen | {{ relationship.from_column.column | markdown_text }} |
-| Tabla de destino | {{ relationship.to_column.table | markdown_text }} |
-| Columna de destino | {{ relationship.to_column.column | markdown_text }} |
-{% for key, label in [('fromCardinality', 'Cardinalidad de origen'), ('toCardinality', 'Cardinalidad de destino'), ('crossFilteringBehavior', 'Dirección de filtro'), ('isActive', 'Activa')] %}
-| {{ label }} | {{ (relationship.property_value(key) if relationship.property_value(key) is not none else 'No especificado en TMDL') | markdown_text }} |
+| Propiedad | Valor | Procedencia |
+|---|---|---|
+| Tabla de origen | {{ relationship.from_column.table | markdown_text }} | Hecho extraído |
+| Columna de origen | {{ relationship.from_column.column | markdown_text }} | Hecho extraído |
+| Tabla de destino | {{ relationship.to_column.table | markdown_text }} | Hecho extraído |
+| Columna de destino | {{ relationship.to_column.column | markdown_text }} | Hecho extraído |
+{% for setting in effective_settings(relationship) %}
+| {{ setting.label }} | {{ readable_value(setting.value) }} ({{ setting.value | inline_code }}) | {% if setting.reference %}Predeterminado verificado — [TOM](#tom-verification){% else %}Hecho extraído: propiedad explícita en TMDL{% endif %} |
 {% endfor %}
-{% for key, value in relationship.properties if key not in ['fromCardinality', 'toCardinality', 'crossFilteringBehavior', 'isActive'] %}
-| {{ key | markdown_text }} | {{ value | markdown_text }} |
+{% for key, value in relationship.properties if key | lower not in ['fromcardinality', 'tocardinality', 'crossfilteringbehavior', 'isactive'] %}
+| {{ key | markdown_text }} | {{ value | markdown_text }} | Hecho extraído |
 {% endfor %}
+
+**Funcionamiento:** {{ filter_explanation(relationship) | markdown_text }}
 
 {% else %}
 No hay relaciones en el inventario.
 {% endfor %}
 
+<a id="seguridad"></a>
+
+## Seguridad y permisos
+
+Los roles RLS, las restricciones OLS y los permisos de lectura/escritura no fueron extraídos por esta versión. No se determina quién puede ver o modificar los datos. Deben documentarse desde la configuración del modelo y del servicio; su ausencia en este documento no demuestra que no existan.
+
+<a id="validaciones"></a>
+
+## Validaciones funcionales
+
+Cada pendiente se describe una sola vez. Las preguntas se sugieren a partir de la estructura y las notas disponibles; no confirman granularidad ni reglas de negocio.
+
+{% for issue in validation_entries %}
+<a id="{{ issue.target }}"></a>
+
+### {{ issue.identifier }} — {{ issue.title | markdown_text }}
+
+{{ issue.question | markdown_text }}
+
+**Afecta a:** {% for identifier, label in issue.objects.items() %}[{{ label | markdown_text }}](#{{ anchor_for_id(identifier) }}){{ ', ' if not loop.last else '.' }}{% endfor %}
+
+**Origen:** {% if 'ai' in issue.origins %}dudas propuestas por IA; {% endif %}{% if 'static' in issue.origins %}análisis estático; {% endif %}{% if 'structure' in issue.origins %}preguntas guiadas por la estructura; {% endif %}síntesis del generador.
+
+{% else %}
+No se registraron preguntas de validación a partir del alcance analizado.
+{% endfor %}
+
+<a id="auditoria"></a>
+
 ## Auditoría básica
 
-Estos hallazgos son puntos de revisión, no errores confirmados del modelo. No se ejecuta DAX ni se modifica Power BI.
+Estos hallazgos son **puntos de revisión, no errores confirmados**. No se ejecuta DAX ni se modifica Power BI.
 Se evalúa el inventario seleccionado; las tablas automáticas excluidas y sus objetos no generan hallazgos.
-DOC001 indica descripción ausente o vacía; REL001, relación explícitamente inactiva; REL002, filtro explícitamente bidireccional.
+La ausencia de descripciones se informa como cobertura de documentación original y no genera un hallazgo por objeto.
+
+| Documentación original | Con descripción | Total | Cobertura |
+|---|---:|---:|---|
+{% for item in documentation_coverage %}
+| {{ item.label }} | {{ item.documented }} | {{ item.total }} | {% if item.total %}{{ '%.1f' | format(100 * item.documented / item.total) }}%{% else %}No aplica{% endif %} |
+{% endfor %}
+
+| Regla | Objetos examinados | Condición de revisión |
+|---|---:|---|
+{% for rule, count, scope in rule_coverage %}
+| {{ rule }} | {{ count }} | {{ scope | markdown_text }} |
+{% endfor %}
+
+**Validaciones no realizadas:** unicidad, integridad referencial, resultados DAX, granularidad funcional, seguridad, ciclos o ambigüedades de propagación, rendimiento y utilidad de negocio. Un resultado sin hallazgos solo se refiere a las reglas de esta tabla.
 
 {% for finding in audit_findings %}
 ### {{ finding.rule_id }} — {{ finding.object_name | markdown_text }}
 
 **Severidad:** {{ finding.severity | markdown_text }}. **Tipo:** {{ finding.object_type | markdown_text }}.
 
-**Identificador:** {{ finding.object_id | markdown_text }}.
+**Identificador:** {{ finding.object_id | markdown_text }}. **Origen:** {{ finding.source_path.as_posix() | markdown_text }}, línea {{ finding.source_line }}.
 
-**Origen:** {{ finding.source_path.as_posix() | markdown_text }}, línea {{ finding.source_line }}.
-
-**Evidencia:** {{ finding.evidence | markdown_text }}.
+{% if finding.generated_with_ai %}
+**Procedencia:** Generado con IA.
+{% else %}
+**Procedencia:** regla automática {{ finding.rule_id | markdown_text }} (sin IA).
+{% endif %}
 
 {{ finding.message | markdown_text }}
 
@@ -172,3 +445,41 @@ DOC001 indica descripción ausente o vacía; REL001, relación explícitamente i
 {% else %}
 Sin hallazgos para las reglas implementadas. Esto no implica una validación completa del modelo.
 {% endfor %}
+
+<a id="tom-verification"></a>
+
+## Apéndice — Comprobación reproducible de TOM
+
+Los valores predeterminados se verificaron con el constructor y la deserialización TMDL de Microsoft TOM {{ tom_evidence.package_version }}. Esta comprobación es local y no consulta un modelo en ejecución ni comprueba datos, unicidad o integridad.
+
+**Registro de verificación:** {{ tom_evidence.verified_at | inline_code }}. **Ensamblado:** {{ tom_evidence.assembly_version | inline_code }}.
+
+**Biblioteca:** [Microsoft.AnalysisServices {{ tom_evidence.package_version }}](https://www.nuget.org/packages/Microsoft.AnalysisServices/{{ tom_evidence.package_version }}).
+
+**SHA-256 del paquete NuGet:** {{ tom_evidence.package_sha256 | inline_code }}.
+
+**Modelo de referencia:** {{ tom_evidence.reference_model | inline_code }}. **Huella de su definición:** {{ tom_evidence.definition_sha256 | inline_code }}.
+{% if tom_evidence.definition_hash_format is defined %}
+**Formato de huella:** {{ tom_evidence.definition_hash_format | markdown_text }}.
+{% endif %}
+La evidencia corresponde a ese modelo de referencia, no a una lectura TOM del modelo que se esté documentando.
+
+Resultado del constructor y de la lectura de las relaciones de la referencia:
+La lectura incluye las tres relaciones del modelo completo de referencia, antes de excluir las tablas automáticas de fechas del inventario publicado.
+
+{{ {'constructor': tom_evidence.constructor, 'relationships': tom_evidence.relationships} | json_block }}
+
+Para repetir la comprobación, extraer el paquete oficial, seleccionar sus bibliotecas net8.0, guardar el siguiente script y ejecutarlo con los parámetros LibraryDirectory y DefinitionDirectory. Puede compararse el resultado y el hash del paquete con este registro.
+
+{{ tom_script | powershell_block }}
+
+Ejemplo de ejecución desde la raíz del repositorio, tras extraer el paquete y guardar el script como verify_tom_defaults.ps1:
+
+```powershell
+.\verify_tom_defaults.ps1 `
+  -LibraryDirectory ".\package\lib\net8.0" `
+  -DefinitionDirectory ".\examples\demo_sales\demo_sales.SemanticModel\definition"
+Get-FileHash ".\Microsoft.AnalysisServices.19.118.3.nupkg" -Algorithm SHA256
+```
+
+La dirección de propagación se interpreta según [Microsoft — Relationship Object](https://learn.microsoft.com/en-us/openspecs/sql_server_protocols/ms-ssas-t/35bb4a68-b97e-409b-a5dd-14695fd99139).

@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,22 @@ from semantic_intelligence.inventory import InventoryError, build_inventory
 DEMO_PROJECT = Path(__file__).parents[1] / "examples" / "demo_sales"
 
 
+def test_inventory_fingerprint_is_independent_of_checkout_line_endings(tmp_path):
+    inventories = []
+    for folder, newline in (("lf", "\n"), ("crlf", "\r\n"), ("cr", "\r")):
+        for name in ("T", "alpha", "Zulu"):
+            table = tmp_path / folder / "Demo.SemanticModel" / "definition" / "tables" / f"{name}.tmdl"
+            table.parent.mkdir(parents=True, exist_ok=True)
+            content = f"table {name}\n\tcolumn Id\n\t\tdataType: int64\n"
+            table.write_bytes(content.replace("\n", newline).encode("utf-8"))
+        discovered = discover_model(tmp_path / folder)
+        inventory = build_inventory(discovered)
+        assert [table.name for table in inventory.tables] == ["T", "Zulu", "alpha"]
+        inventories.append(inventory.to_json())
+        inventories.append(build_inventory(replace(discovered, tmdl_files=tuple(reversed(discovered.tmdl_files)))).to_json())
+    assert len(set(inventories)) == 1
+
+
 def test_exports_complete_demo_without_changing_source(tmp_path, capsys):
     before = {
         path.relative_to(DEMO_PROJECT): path.read_bytes()
@@ -19,7 +36,7 @@ def test_exports_complete_demo_without_changing_source(tmp_path, capsys):
     destination = tmp_path / "reports" / "model.json"
     assert main([str(DEMO_PROJECT), "--output", str(destination)]) == 0
     data = json.loads(destination.read_text(encoding="utf-8"))
-    assert data["schema_version"] == "0.3"
+    assert data["schema_version"] == "0.4"
     assert data["name"] == "demo_sales"
     assert len(data["tables"]) == 3
     assert sum(len(table["columns"]) for table in data["tables"]) == 12

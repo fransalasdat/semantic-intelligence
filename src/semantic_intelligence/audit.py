@@ -4,10 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import quote
-
-from semantic_intelligence.tmdl.table_parser import (
-    ParsedColumn, ParsedHierarchy, ParsedLevel, ParsedMeasure, ParsedTable,
-)
+import re
+from semantic_intelligence.identifiers import object_id
 
 if TYPE_CHECKING:
     from semantic_intelligence.inventory import ModelInventory
@@ -25,6 +23,7 @@ class AuditFinding:
     evidence: str
     message: str
     recommendation: str
+    generated_with_ai: bool = False
 
 
 def audit_inventory(model: "ModelInventory") -> tuple[AuditFinding, ...]:
@@ -32,30 +31,26 @@ def audit_inventory(model: "ModelInventory") -> tuple[AuditFinding, ...]:
 
     findings: list[AuditFinding] = []
 
-    def check_description(
-        item: ParsedTable | ParsedColumn | ParsedMeasure | ParsedHierarchy | ParsedLevel,
-        kind: str,
-        parts: tuple[str, ...],
-    ) -> None:
-        if item.description is not None and item.description.strip():
-            return
-        findings.append(AuditFinding(
-            rule_id="DOC001", severity="info", object_type=kind, object_name=item.name,
-            object_id="/".join(quote(part, safe="") for part in parts),
-            source_path=item.source_path, source_line=item.source_line,
-            evidence="description ausente o vacía",
-            message="El objeto no tiene descripción documentada.",
-            recommendation="Agregar una descripción validada por el responsable del modelo.",
-        ))
-
     for table in model.tables:
-        check_description(table, "table", ("table", table.name))
-        for kind, items in (("column", table.columns), ("measure", table.measures), ("hierarchy", table.hierarchies)):
-            for item in items:
-                check_description(item, kind, ("table", table.name, kind, item.name))
-                if kind == "hierarchy":
-                    for level in item.levels:
-                        check_description(level, "level", ("table", table.name, kind, item.name, "level", level.name))
+        for column in table.columns:
+            if (column.summarize_by or "").casefold() != "sum":
+                continue
+            normalized = column.name.casefold()
+            if re.match(r"^id(?:$|[_\s]|[a-záéíóú])", normalized) or normalized in {"año", "ano", "year", "mes", "month"}:
+                rule, message, recommendation = "COL001", "La columna declara agregación sum y su nombre sugiere un identificador o componente de calendario.", "Revisar si corresponde desactivar la agregación (none). La interpretación del nombre es una heurística, no una validación funcional."
+            elif "unitario" in normalized or "unitprice" in normalized or "unitcost" in normalized:
+                rule, message, recommendation = "COL002", "La columna declara agregación sum y su nombre sugiere un valor unitario.", "Revisar si su suma resulta útil para el consumidor o si conviene otra agregación o una medida explícita."
+            else:
+                continue
+            findings.append(AuditFinding(rule, "info", "column", f"{table.name}[{column.name}]",
+                object_id("column", table.name, column.name), column.source_path, column.source_line,
+                f"summarizeBy: {column.summarize_by}; name: {column.name}", message, recommendation))
+        for measure in table.measures:
+            if "%" in measure.name and not measure.format_string:
+                findings.append(AuditFinding("FMT001", "info", "measure", f"{table.name}[{measure.name}]",
+                    object_id("measure", table.name, measure.name), measure.source_path, measure.source_line,
+                    f"name: {measure.name}; formatString ausente", "La medida contiene % en su nombre y no tiene formato estático explícito.",
+                    "Revisar su presentación como porcentaje. El nombre es una pista; los formatos dinámicos no se analizan."))
 
     for relationship in model.relationships:
         properties = {name.casefold(): value for name, value in relationship.properties}
@@ -77,3 +72,23 @@ def audit_inventory(model: "ModelInventory") -> tuple[AuditFinding, ...]:
                     evidence=f"{key}: {value}", message=message, recommendation=recommendation,
                 ))
     return tuple(findings)
+
+
+def documentation_coverage(model):
+    """Original descriptions only; AI suggestions do not improve this coverage."""
+    categories = {"Tablas": model.tables,
+                  "Columnas": tuple(c for t in model.tables for c in t.columns),
+                  "Medidas": tuple(m for t in model.tables for m in t.measures)}
+    return tuple(dict(label=label, total=len(items), documented=sum(bool((item.description or "").strip()) for item in items))
+                 for label, items in categories.items())
+
+
+def rule_coverage(model):
+    """Evaluated scopes; no claim that these few checks validate the whole model."""
+    columns = sum(len(t.columns) for t in model.tables)
+    measures = sum(len(t.measures) for t in model.tables)
+    return (("COL001", columns, "sum + nombre de identificador/calendario (heurística)"),
+            ("COL002", columns, "sum + nombre de valor unitario (heurística)"),
+            ("FMT001", measures, "% en nombre y ausencia de formato estático"),
+            ("REL001", len(model.relationships), "isActive: false explícito"),
+            ("REL002", len(model.relationships), "bothDirections explícito"))

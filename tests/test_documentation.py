@@ -139,7 +139,7 @@ def test_measures_have_dax_metadata_and_explicit_missing_descriptions():
     markdown = render_markdown(inventory)
     assert markdown.count("#### Medida:") == 6
     measure_catalog = markdown.split("## Catálogo de medidas\n", 1)[1].split("## Relaciones\n", 1)[0]
-    assert measure_catalog.count("Sin descripción en el modelo") == 6
+    assert measure_catalog.count("La definición funcional requiere") == 6
     for table in inventory.tables:
         for measure in table.measures:
             assert measure.expression in markdown

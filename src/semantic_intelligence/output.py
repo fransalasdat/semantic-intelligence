@@ -1,6 +1,7 @@
 """Shared output protection and atomic UTF-8 writes."""
 
 import os
+import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -31,7 +32,16 @@ def write_output(content: str, destination: Path, project_path: Path) -> None:
         ) as stream:
             temporary_path = Path(stream.name)
             stream.write(content)
-        os.replace(temporary_path, destination)
+        # Windows readers/antivirus can briefly hold the destination without
+        # FILE_SHARE_DELETE. Retry only those sharing/access failures, bounded.
+        for attempt in range(6):
+            try:
+                os.replace(temporary_path, destination)
+                break
+            except PermissionError as error:
+                if getattr(error, "winerror", None) not in (5, 32) or attempt == 5:
+                    raise
+                time.sleep(0.05 * (2 ** attempt))
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)

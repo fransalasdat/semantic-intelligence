@@ -1,12 +1,14 @@
 """Combine parsed TMDL metadata into a portable, versioned inventory."""
 
 import json
+import hashlib
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from semantic_intelligence.discovery import DiscoveredModel
 from semantic_intelligence.audit import audit_inventory
 from semantic_intelligence.output import write_output
+from semantic_intelligence.relationship_semantics import effective_settings
 from semantic_intelligence.tmdl.reader import read_tmdl_documents
 from semantic_intelligence.tmdl.relationship_parser import (
     ParsedRelationship,
@@ -26,15 +28,17 @@ class ModelInventory:
     name: str
     tables: tuple[ParsedTable, ...]
     relationships: tuple[ParsedRelationship, ...]
-    schema_version: str = "0.3"
+    schema_version: str = "0.4"
     excluded_auto_date_tables: tuple[str, ...] = ()
     auto_date_tables_included: bool = False
+    definition_sha256: str | None = None
 
     def to_json(self) -> str:
         """Serialize without machine-specific paths or timestamps."""
 
         payload = asdict(self)
         payload["audit_findings"] = [asdict(finding) for finding in audit_inventory(self)]
+        payload["relationship_settings"] = [dict(name=relationship.name, settings=effective_settings(relationship)) for relationship in self.relationships]
         return json.dumps(
             payload,
             ensure_ascii=False,
@@ -54,7 +58,7 @@ def build_inventory(
 ) -> ModelInventory:
     """Read once, parse objects, and validate relationship references."""
 
-    documents = read_tmdl_documents(model)
+    documents = tuple(sorted(read_tmdl_documents(model), key=lambda document: document.relative_path.as_posix()))
     tables = parse_table_documents(documents)
     relationships = parse_relationship_documents(documents)
 
@@ -112,6 +116,10 @@ def build_inventory(
         ),
         excluded_auto_date_tables=tuple(sorted(excluded)),
         auto_date_tables_included=include_auto_date_tables,
+        definition_sha256=hashlib.sha256(b"".join(
+            document.relative_path.as_posix().encode() + b"\0" + document.content.replace("\r\n", "\n").replace("\r", "\n").encode() + b"\0"
+            for document in documents
+        )).hexdigest(),
     )
 
 

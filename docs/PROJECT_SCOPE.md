@@ -7,20 +7,22 @@
 **Tecnologías previstas:** Python, PBIP, TMDL, DAX, JSON, Git y modelos de lenguaje<br>
 **Modalidad:** desarrollo incremental orientado a una solución reproducible y a portfolio profesional
 
-### Estado al 1 de noviembre de 2026
+### Estado al 2 de noviembre de 2026
 
-La aplicación tiene preparada localmente la versión **1.0.0**, correspondiente al
-MVP de inventario y documentación del subconjunto TMDL implementado: tablas,
-columnas, medidas y relaciones, con salidas JSON y Markdown. El documento de
-definición conserva su versión **2.0**: su número no es la versión de la aplicación.
+La aplicación alcanza la versión **2.0.0**, con inventario, documentación técnica
+y funcional, jerarquías, particiones clasificadas, auditoría y definiciones con IA
+opcional. El documento de definición conserva su versión **2.0** como documento
+de visión; su numeración es independiente de la aplicación.
 
 Este documento describe la visión completa y el roadmap, no una lista de
 capacidades disponibles. El alcance verificable de esta entrega, sus límites y
-los comandos de validación se encuentran en [VERSION_1.md](VERSION_1.md).
-En la rama posterior a 1.0.0 se amplían jerarquías y auditoría básica;
-ver [cambios en desarrollo](DEVELOPMENT.md). No son todavía una release nueva.
-Se utilizan dataclasses para el inventario y Jinja2 para Markdown; Pydantic,
-NetworkX, proveedores de IA e interfaz web permanecen como propuestas futuras.
+los comandos de validación se encuentran en [VERSION_2.md](VERSION_2.md).
+La entrega histórica se conserva en [VERSION_1.md](VERSION_1.md); los detalles de
+implementación están en [DEVELOPMENT.md](DEVELOPMENT.md). Se utilizan dataclasses
+y Jinja2; Pydantic y los proveedores de IA son dependencias opcionales.
+NetworkX y la interfaz web permanecen como propuestas futuras. El análisis DAX
+y M tiene un alcance acotado; no se dispone de un grafo completo de dependencias
+ni de análisis completo de seguridad o linaje.
 
 ## 1. Propósito
 
@@ -66,7 +68,7 @@ Casos de uso principales:
 - generar un inventario navegable de un modelo;
 - consultar tablas, columnas, medidas y relaciones;
 - localizar referencias entre medidas, columnas y tablas;
-- detectar objetos sin descripción u otras desviaciones configurables;
+- detectar desviaciones configurables de modelado;
 - estimar el impacto técnico de una modificación;
 - comparar dos versiones normalizadas del mismo modelo;
 - obtener una explicación asistida de una medida DAX;
@@ -126,7 +128,6 @@ Los casos ambiguos o no resueltos deberán quedar señalados; no se presentarán
 
 Un motor de reglas configurable evaluará, inicialmente:
 
-- objetos sin descripción;
 - convenciones de nomenclatura;
 - organización y visibilidad del modelo;
 - relaciones que requieran revisión;

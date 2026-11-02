@@ -71,7 +71,7 @@ def test_hierarchies_exported_and_unknown_column_rejected(tmp_path):
     assert '"hierarchies"' in inventory.to_json()
     markdown = render_markdown(inventory)
     assert "#### Jerarquía: Product's hierarchy" in markdown
-    assert "| 0 | Category level | Product Category | First level |" in markdown
+    assert "Category level | Product Category | First level |" in markdown
     path.write_text(content.replace("column: Name", "column: Missing"), encoding="utf-8")
     with pytest.raises(InventoryError, match="unknown column: Missing"):
         build_inventory(discover_model(tmp_path))
