@@ -15,6 +15,7 @@ from semantic_intelligence.identifiers import object_id
 from semantic_intelligence.measure_analysis import analyze_measure, REFERENCE_TITLES
 from semantic_intelligence.relationship_semantics import effective_settings, filter_explanation, readable_value
 from semantic_intelligence.publication import published_definition
+from semantic_intelligence.editorial import CONTEXT_FIELDS, editorial_definition, definition_records, normalize_context
 from semantic_intelligence.documentation_review import ValidationRegister, anchor, concise_definition, documentation_objects
 from semantic_intelligence import __version__
 
@@ -48,7 +49,8 @@ def _connections(model):
     return "\n".join([*lines, "```"])
 
 
-def render_markdown(model: ModelInventory, *, ai_report: dict | None = None) -> str:
+def render_markdown(model: ModelInventory, *, ai_report: dict | None = None,
+                    editorial: dict | None = None, compact: bool = False) -> str:
     """Document extracted metadata deterministically from the same inventory as JSON."""
 
     environment = Environment(
@@ -77,17 +79,26 @@ def render_markdown(model: ModelInventory, *, ai_report: dict | None = None) -> 
         ai_objects = {key: {"source": source, "explanation": explanation}}
     current_ai = not ai_batch or ai_batch.get("source_sha256") == hashlib.sha256(model.to_json().encode()).hexdigest()
     objects = list(documentation_objects(model))
+    current_editorial = editorial if editorial and editorial.get("source_sha256") == hashlib.sha256(model.to_json().encode()).hexdigest() else {}
+    edits = current_editorial.get("definitions", {})
+    business_context = normalize_context(current_editorial.get("business_context",
+                                        ai_batch.get("business_context", {}) if ai_batch and current_ai else {}))
     definitions = {}
     for kind, table, name, parent, item in objects:
         key = object_id(kind, table, name, parent)
         entry = ai_objects.get(key) if current_ai else None
         known_columns = next((tuple(column.name for column in item.columns) for item in model.tables if item.name == table), ()) if kind == "table" else ()
-        definitions[key] = published_definition(entry, kind, known_columns=known_columns)
+        proposal = published_definition(entry, kind, known_columns=known_columns)
+        override = editorial_definition(edits.get(key))
+        if override and proposal:
+            override["notes"] = proposal["notes"]
+        definitions[key] = override or proposal
     analyses = {(table.name, measure.name): analyze_measure(model, table, measure) for table in model.tables for measure in table.measures}
     register = ValidationRegister(model, analyses, definitions)
     def definition(kind, table, name, parent=None):
         key = object_id(kind, table, name, parent)
-        return concise_definition(definitions.get(key), register.for_key(key))
+        value = definitions.get(key)
+        return value if value and value.get("origin") in {"user", "ai_edited"} else concise_definition(value, register.for_key(key))
     environment.globals["ai_definition"] = definition
     environment.globals["validation_refs"] = register.for_object
     environment.globals["object_anchor"] = lambda kind, table, name, parent=None: anchor(object_id(kind, table, name, parent))
@@ -101,7 +112,8 @@ def render_markdown(model: ModelInventory, *, ai_report: dict | None = None) -> 
     environment.globals["measure_analysis"] = lambda table, measure: analyses[table, measure.name]
     environment.globals["effective_settings"] = effective_settings
     environment.globals["filter_explanation"] = filter_explanation
-    published_count = sum(bool(value) for value in definitions.values())
+    published_count = sum(bool(definitions.get(key)) for key in ai_objects)
+    records = definition_records(model, ai_report if current_ai else None, edits, business_context)
     labels = {"model": "modelo", "table": "tablas", "column": "columnas", "measure": "medidas", "relationship": "relaciones", "hierarchy": "jerarquías", "level": "niveles"}
     breakdown = [(label, sum(bool(definitions[object_id(kind, table, name, parent)]) for kind, table, name, parent, item in objects if kind == target))
                  for target, label in labels.items()]
@@ -120,6 +132,13 @@ def render_markdown(model: ModelInventory, *, ai_report: dict | None = None) -> 
     template = environment.get_template("documentation.md.j2")
     return template.render(
         model=model,
+        compact=compact,
+        business_context=business_context,
+        context_labels=CONTEXT_FIELDS,
+        definition_records=records,
+        missing_definitions=[record for record in records if not record["definition"]],
+        editorial_count=len(edits),
+        has_assisted_edits=any(edit.get("based_on_ai") for edit in edits.values()),
         column_count=sum(len(table.columns) for table in model.tables),
         measure_count=sum(len(table.measures) for table in model.tables),
         hierarchy_count=sum(len(table.hierarchies) for table in model.tables),
@@ -127,6 +146,7 @@ def render_markdown(model: ModelInventory, *, ai_report: dict | None = None) -> 
         ai_report=ai_report,
         ai_batch=ai_batch,
         ai_object_count=len(ai_objects),
+        ai_pending_count=len((ai_report or {}).get("rejected_objects", {})) if current_ai else 0,
         ai_finding_count=sum(finding.generated_with_ai for finding in findings),
         generation_date=datetime.now(timezone.utc).date().isoformat(),
         generator_version=__version__,

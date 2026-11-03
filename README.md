@@ -9,6 +9,59 @@ Semantic Intelligence es un proyecto en Python que transforma los metadatos de p
 
 La IA es una capa opcional para proponer documentación. El inventario y la auditoría funcionan de forma independiente. El análisis de impacto entre versiones continúa en el roadmap.
 
+## App local con Streamlit
+
+La rama de desarrollo incorpora una interfaz para analizar un proyecto local,
+ver su diagrama de relaciones, explorar el inventario, leer la documentación y descargar los resultados sin
+escribir comandos de extracción. También permite generar definiciones con Ollama,
+ver el progreso por lote y reintentar una generación interrumpida en la misma sesión.
+
+El flujo es **Explorar → Comprender y documentar → Revisar y exportar**.
+En el paso 2, **Comprender el modelo con IA** obtiene una visión general a partir
+de tablas, columnas, relaciones, fórmulas y descripciones existentes. No necesitás
+explicar previamente el negocio. Después, **Generar documentación detallada**
+reutiliza esa interpretación para orientar las definiciones de cada objeto.
+**Corregir o agregar contexto** queda como una opción posterior y colapsada.
+El documento completo se habilita después de generar los detalles; en el paso 3 podés corregir y marcar definiciones como revisadas antes
+de descargarlo. Las descripciones originales se conservan y cada aporte mantiene
+su procedencia. La descarga técnica sin IA queda como opción secundaria.
+
+Desde la raíz del repositorio, con el entorno virtual creado:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[app]"
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+Abrí **http://127.0.0.1:8501**, elegí «Modelo de ejemplo» o ingresá la ruta de
+tu proyecto y presioná «Analizar modelo». Para enriquecerlo, usá el paso
+«2 · Comprender y documentar», con Ollama abierto y un modelo ya descargado.
+También podés ingresar directamente la carpeta `.SemanticModel` o su subcarpeta
+`definition`; ambas se resuelven al mismo proyecto.
+Para seleccionar archivos desde la pantalla, usá **Cargar carpeta** o **Cargar ZIP**:
+incluí el `.pbip` junto con `*.SemanticModel/definition` o la carpeta del modelo.
+La carga copia únicamente definiciones a una carpeta temporal; omite cachés y archivos del informe.
+
+Las descargas son **`modelo.json`**, **`documentacion.md`** y, si se usa IA,
+**`definiciones_ia.json`**; también se ofrecen juntas en un ZIP.
+Cuando aportás contexto o editás definiciones, se agrega **`revision_documentacion.json`**
+con tus aportes y la referencia al contenido IA original, que no se sobrescribe.
+El Markdown agrupa las definiciones ausentes en una cobertura de pendientes y omite
+los párrafos genéricos que solo anuncian que falta una descripción.
+El diagrama se descarga aparte como **`diagrama_modelo.svg`**, una imagen vectorial
+con tablas, columnas, tipos, medidas, cardinalidades y flechas de filtro.
+Podés elegir las tablas visibles, mostrar solo columnas relacionadas u ocultar medidas.
+La vista previa no agrega exportación nativa a PDF, HTML o Word.
+
+En **Personalizar apariencia** podés cambiar el nombre y cargar un logo PNG, JPG
+o WebP. La identidad incluida usa tablas conectadas en verde petróleo y se conserva
+como opción predeterminada; los cambios personales duran la sesión.
+
+La app se ejecuta localmente y acepta proyectos PBIP/TMDL; los PBIX requieren conversión previa.
+Los lotes de IA se guardan en `output/checkpoints` para reanudar con el mismo
+proyecto, modelo y contexto después de recargar o reiniciar. Las correcciones del
+editor pertenecen a la sesión: descargalas para conservarlas. Ver [guía de la app](docs/APP.md).
+
 ## Entrada y salidas
 
 **Le pasás un proyecto Power BI en formato PBIP/TMDL y elegís qué archivos generar:
@@ -85,7 +138,8 @@ La versión 2.0.0 amplía el inventario inicial con documentación explicativa y
 
 El alcance de esta versión es el subconjunto de TMDL implementado y probado;
 no implica compatibilidad con todos los modelos de Power BI. El grafo completo de
-dependencias, la comparación de versiones y la interfaz continúan en el roadmap.
+dependencias y la comparación de versiones continúan en el roadmap. La interfaz
+local con Streamlit se desarrolla sobre este motor en la rama de trabajo.
 Ver [alcance y límites de 2.0.0](docs/VERSION_2.md). La documentación de
 [1.0.0](docs/VERSION_1.md) se conserva como referencia histórica.
 

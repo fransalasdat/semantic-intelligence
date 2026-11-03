@@ -1,5 +1,37 @@
 # Historial de cambios
 
+## En desarrollo
+
+- Generación de la app tolerante a respuestas inválidas: conserva objetos válidos,
+  solicita una corrección acotada y continúa con pendientes sin publicar texto rechazado.
+- Checkpoints de IA persistentes por proyecto/modelo/contexto, conservando carpetas
+  de trabajo aisladas; progreso con procesados, válidos, pendientes, actividad y tiempo.
+- Lectura automática inicial del modelo con Ollama, sin contexto de negocio obligatorio:
+  visión general visible antes de generar el detalle y campos de corrección opcionales posteriores.
+- Interpretación reutilizable como inferencia IA en los lotes de definiciones,
+  diferenciada de los hechos extraídos y de los aportes del usuario.
+- Flujo Explorar → Comprender y documentar → Revisar y exportar, con vista previa
+  completa habilitada después de preparar el documento y descarga técnica secundaria.
+- Contexto de negocio opcional enviado a Ollama y registrado en el informe; la caché
+  de lotes distingue cambios reales de contexto y conserva entradas equivalentes.
+- Editor de definiciones por objeto, cobertura y marcas de revisión del usuario.
+  Correcciones y procedencia en `revision_documentacion.json`, sin sobrescribir respuestas IA.
+- Markdown de la app con cobertura central de definiciones pendientes, sin párrafos
+  genéricos repetidos; descripciones originales, aportes humanos y asistencia de IA diferenciados.
+- App local opcional con Streamlit: ruta PBIP/carpeta, modelo de ejemplo,
+  inventario, puntos de revisión y vista previa del documento.
+- Descubrimiento desde `.SemanticModel` o `definition`, conservando la raíz
+  del proyecto y permitiendo seleccionar explícitamente un modelo.
+- Descarga de inventario JSON, Markdown e informe IA opcional, separados o en ZIP.
+- Identidad visual en verde petróleo, logo SVG y personalización de nombre/logo por sesión.
+- Carga desde el selector de carpeta o ZIP, conservando la estructura y validando rutas y tamaños.
+- Diagrama ER como imagen SVG descargable, con columnas, tipos, medidas,
+  cardinalidades efectivas, dirección de filtros y relaciones inactivas.
+- Generación con Ollama en segundo plano, progreso por lote, resultado parcial
+  y reintento con reutilización de lotes en la misma sesión.
+- Notificación opcional de progreso en el generador por lotes, compatible con la CLI.
+- Guía de uso, configuración local y pruebas de integración de interfaz y servicio.
+
 ## 2.0.0 — 2026-11-02
 
 Documentación técnica y funcional del modelo semántico, con definiciones

@@ -48,6 +48,23 @@ def test_discovers_demo_model_from_pbip_file() -> None:
     assert model_from_pbip.tmdl_files == model_from_directory.tmdl_files
 
 
+@pytest.mark.parametrize("suffix", ["demo_sales.SemanticModel", "demo_sales.SemanticModel/definition"])
+def test_accepts_direct_model_paths_and_preserves_the_project_root(suffix) -> None:
+    expected = discover_model(DEMO_PROJECT)
+    assert discover_model(DEMO_PROJECT / suffix) == expected
+
+
+def test_explicit_model_path_selects_one_model_in_a_multiple_model_project(tmp_path) -> None:
+    for name in ("first", "second"):
+        definition = tmp_path / f"{name}.SemanticModel" / "definition"
+        definition.mkdir(parents=True)
+        (definition / "model.tmdl").write_text(f"model {name}\n", encoding="utf-8")
+    selected = discover_model(tmp_path / "second.SemanticModel")
+    assert selected.model_name == "second"
+    assert selected.project_path == tmp_path.resolve()
+    assert all(path.is_relative_to(selected.definition_path) for path in selected.tmdl_files)
+
+
 def test_rejects_path_that_does_not_exist(tmp_path: Path) -> None:
     missing_project = tmp_path / "missing-project"
 

@@ -6,7 +6,13 @@
 {% endif %}
 {% endmacro %}
 {% macro describe(value, references=[]) %}
+{% if value.origin | default('ai') == 'ai_edited' %}
+**Definición {{ 'revisada' if value.reviewed else 'editada' }} por el usuario · Basada en contenido generado con IA**{{ (' · ' ~ value.business_name) | markdown_text if value.business_name else '' }}
+{% elif value.origin | default('ai') == 'user' %}
+**Definición aportada por el usuario{{ ' · Revisada' if value.reviewed else '' }}**{{ (' · ' ~ value.business_name) | markdown_text if value.business_name else '' }}
+{% else %}
 **Definición propuesta — Generado con IA**{{ (' · ' ~ value.business_name) | markdown_text if value.business_name else '' }}
+{% endif %}
 
 {{ value.text | markdown_text }}
 {{ checks(references) }}
@@ -19,12 +25,28 @@
 {% set overview = ai_definition('model', none, model.name) %}
 {% if overview %}
 {{ describe(overview, validation_refs('model', none, model.name)) }}
-{% else %}
+{% elif business_context.purpose | default('') %}
+**Propósito aportado por el usuario:** {{ business_context.purpose | markdown_text }}
+{% elif not compact %}
 El modelo reúne {{ model.tables | length }} tablas y {{ measure_count }} medidas. Las tablas incluidas son {{ model.tables | map(attribute='name') | join(', ') | markdown_text }}.
 El propósito de negocio requiere una descripción del autor o generar definiciones con IA mediante <code>--explain-all</code>.
 {% endif %}
 
+{% if business_context.owner | default('') %}
+**Responsable del modelo — aportado por el usuario:** {{ business_context.owner | markdown_text }}.
+{% elif not compact %}
 **Responsable del modelo:** no informado en los metadatos extraídos.
+{% endif %}
+{% if business_context.grain | default('') or business_context.units | default('') or business_context.rules | default('') or (overview and business_context.purpose | default('')) %}
+
+### Contexto de negocio aportado por el usuario
+
+{% for key, value in business_context.items() if key != 'owner' and (key != 'purpose' or overview) %}
+**{{ context_labels[key] }}:** {{ value | markdown_text }}
+
+{% endfor %}
+Este contexto no procede de TMDL ni implica verificación de datos; los pendientes funcionales se conservan.
+{% endif %}
 
 **Fecha de generación:** {{ generation_date }} (UTC). **Versión del generador:** {{ generator_version }}; esquema {{ model.schema_version }}.
 
@@ -76,6 +98,9 @@ Definiciones publicadas: {{ published_ai_count }} de {{ ai_object_count }} objet
 Desglose de definiciones publicadas: {% for label, count in ai_breakdown if count %}{{ count }} {{ label }}{{ ' + ' if not loop.last else '.' }}{% endfor %}
 
 El propio modelo es un objeto adicional a sus tablas, columnas, medidas, relaciones, jerarquías y niveles.
+{% if ai_pending_count %}
+Propuestas de IA pendientes por no superar los controles: {{ ai_pending_count }}. Sus textos rechazados se conservan en el informe JSON y no se publican como definiciones; los objetos se pueden completar en el editor.
+{% endif %}
 **Generado con IA** identifica las definiciones asistidas. Las incertidumbres compartidas se agrupan en el registro de validaciones; cada objeto enlaza sus pendientes.
 Los controles de formato y afirmaciones detectables no garantizan la validez de todas las interpretaciones de negocio.
 {% if not ai_source_current %}
@@ -85,8 +110,26 @@ El informe IA corresponde a otra instantánea del inventario; sus interpretacion
 {% if ai_object_count and published_ai_count == 0 and ai_source_current %}
 El informe guardado no contiene definiciones completas publicables. Generarlas con <code>--explain-all</code> permite completar el diccionario; no se sustituyen por etiquetas genéricas.
 {% endif %}
-{% elif not ai_finding_count %}
+{% elif not ai_finding_count and not has_assisted_edits %}
 Este documento no contiene contenido generado con IA.
+{% endif %}
+{% if editorial_count %}
+Objetos con revisión o edición del usuario: {{ editorial_count }}. Sus cambios y procedencia se conservan en `revision_documentacion.json`; las respuestas originales de IA permanecen separadas.
+{% endif %}
+{% if compact %}
+
+### Cobertura de definiciones
+
+Objetos con definición: {{ definition_records | length - missing_definitions | length }} de {{ definition_records | length }} (incluye el propio modelo).
+{% if missing_definitions %}
+Los objetos siguientes aún necesitan una definición funcional:
+
+| Tipo de objeto | Objeto |
+|---|---|
+{% for record in missing_definitions %}
+| {{ {'model': 'Modelo', 'table': 'Tabla', 'column': 'Columna', 'measure': 'Medida', 'relationship': 'Relación', 'hierarchy': 'Jerarquía', 'level': 'Nivel'}[record.kind] }} | [{{ record.label | markdown_text }}](#{{ anchor_for_id(record.object_id) }}) |
+{% endfor %}
+{% endif %}
 {% endif %}
 {% if ai_finding_count %}
 Hallazgos generados con IA: {{ ai_finding_count }}. Son propuestas, no hechos confirmados.
@@ -130,7 +173,7 @@ Tablas automáticas excluidas ({{ model.excluded_auto_date_tables | length }}):
 {% set definition = ai_definition('table', table.name, table.name) %}
 {% if definition %}
 {{ describe(definition, validation_refs('table', table.name, table.name)) }}
-{% elif not table.description %}
+{% elif not table.description and not compact %}
 Definición de negocio no disponible. Esta tabla contiene {{ table.columns | map(attribute='name') | join(', ') | markdown_text }}.
 {{ checks(validation_refs('table', table.name, table.name)) }}
 {% endif %}
@@ -235,7 +278,9 @@ No hay columnas en el inventario.
 
 #### Jerarquía: {{ hierarchy.name | markdown_text }}
 
+{% if hierarchy.description or not compact %}
 **Descripción original:** {{ (hierarchy.description or 'Sin descripción en el modelo.') | markdown_text }}
+{% endif %}
 
 **Oculta:** {{ 'Sí' if hierarchy.is_hidden else 'No' }}. **Origen:** {{ hierarchy.source_path.as_posix() | markdown_text }}, línea {{ hierarchy.source_line }}.
 {% set definition = ai_definition('hierarchy', table.name, hierarchy.name) %}
@@ -247,7 +292,7 @@ No hay columnas en el inventario.
 |---:|---|---|---|---:|
 {% for level in hierarchy.levels %}
 {% set definition = ai_definition('level', table.name, level.name, hierarchy.name) %}
-| {{ level.ordinal }} | <a id="{{ object_anchor('level', table.name, level.name, hierarchy.name) }}"></a>{{ level.name | markdown_text }} | {{ level.column | markdown_text }} | {{ (level.description or '—') | markdown_text }}{% if definition %}<br>**IA · propuesta:** {{ definition.text | markdown_text }}{% endif %} | {{ level.source_line }} |
+| {{ level.ordinal }} | <a id="{{ object_anchor('level', table.name, level.name, hierarchy.name) }}"></a>{{ level.name | markdown_text }} | {{ level.column | markdown_text }} | {{ (level.description or '—') | markdown_text }}{% if definition %}<br>**{{ 'Usuario · basada en IA' if definition.origin | default('ai') == 'ai_edited' else 'Usuario' if definition.origin | default('ai') == 'user' else 'IA · propuesta' }}:** {{ definition.text | markdown_text }}{% endif %} | {{ level.source_line }} |
 {% endfor %}
 
 {% endfor %}
@@ -276,7 +321,7 @@ Aplican a las fórmulas reconocidas, sin incorporar grupos de cálculo ni format
 {% set definition = ai_definition('measure', table.name, measure.name) %}
 {% if definition %}
 {{ describe(definition, validation_refs('measure', table.name, measure.name)) }}
-{% elif not measure.description %}
+{% elif not measure.description and not compact %}
 La definición funcional requiere una descripción del autor o generar con <code>--explain-all</code>. El cálculo técnico se explica a continuación cuando el patrón es reconocido.
 {% endif %}
 

@@ -27,7 +27,8 @@ class DiscoveredModel:
 def discover_model(project_path: str | Path) -> DiscoveredModel:
     """Discover the semantic model and its TMDL files.
 
-    The input can be either a PBIP project directory or its .pbip file.
+    Accept a project directory, its .pbip, a .SemanticModel directory, or
+    its definition subdirectory. Explicit model paths select that model only.
     """
 
     path = Path(project_path).expanduser().resolve()
@@ -35,6 +36,7 @@ def discover_model(project_path: str | Path) -> DiscoveredModel:
     if not path.exists():
         raise ProjectDiscoveryError(f"Project path does not exist: {path}")
 
+    selected_definition = None
     if path.is_file():
         if path.suffix.lower() != ".pbip":
             raise ProjectDiscoveryError(
@@ -42,12 +44,21 @@ def discover_model(project_path: str | Path) -> DiscoveredModel:
             )
 
         project_directory = path.parent
+    elif path.name.casefold().endswith(".semanticmodel"):
+        project_directory = path.parent
+        selected_definition = path / "definition"
+    elif (path.name.casefold() == "definition"
+          and path.parent.name.casefold().endswith(".semanticmodel")):
+        project_directory = path.parent.parent
+        selected_definition = path
     else:
         project_directory = path
 
+    candidates = ([selected_definition] if selected_definition is not None
+                  else project_directory.glob("*.SemanticModel/definition"))
     definition_directories = sorted(
         candidate
-        for candidate in project_directory.glob("*.SemanticModel/definition")
+        for candidate in candidates
         if candidate.is_dir()
     )
 

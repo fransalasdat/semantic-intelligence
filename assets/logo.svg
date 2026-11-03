@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 88" width="440" height="88" role="img" aria-label="Semantic Intelligence">
+  <rect x="0" y="4" width="80" height="80" rx="22" fill="#0f766e"/>
+  <path d="M23 27 L57 40 L27 60" fill="none" stroke="#99f6e4" stroke-width="4" stroke-linecap="round"/>
+  <rect x="13" y="17" width="22" height="18" rx="4" fill="#fff"/>
+  <rect x="46" y="31" width="22" height="18" rx="4" fill="#fff"/>
+  <rect x="16" y="52" width="22" height="18" rx="4" fill="#fff"/>
+  <path d="M18 24 H29 M51 38 H62 M21 59 H32" stroke="#0f766e" stroke-width="2" stroke-linecap="round"/>
+  <text x="99" y="39" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700" fill="#152832">Semantic</text>
+  <text x="99" y="68" font-family="Segoe UI,Arial,sans-serif" font-size="27" fill="#0f766e">Intelligence</text>
+</svg>
